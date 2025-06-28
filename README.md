@@ -39,11 +39,23 @@ To get this application running on your local machine, follow these steps:
 
 After installation, you can start the application:
 
+### Development
+
+For development with automatic server restarts on file changes, use:
+
+```bash
+npm run dev
+```
+
+### Production
+
+To run the application in a production environment:
+
 ```bash
 npm start
 ```
 
-This will start the Node.js server, and the application will be accessible in your web browser, usually at `http://localhost:3000`.
+In both cases, the application will be accessible in your web browser, usually at `http://localhost:3000`.
 
 ## Usage
 
