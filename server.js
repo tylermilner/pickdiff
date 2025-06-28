@@ -14,7 +14,7 @@ app.use(express.json());
 app.get('/api/files', async (req, res) => {
   try {
     // Using git ls-files to get all tracked files
-    const files = await git.lsFiles();
+    const files = (await git.raw(['ls-files'])).split('\n').filter(Boolean);
     res.json(files);
   } catch (error) {
     res.status(500).json({ error: error.message });
