@@ -3,11 +3,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const diffForm = document.getElementById('diff-form');
     const diffSummary = document.getElementById('diff-summary');
 
+    const startCommitInput = document.getElementById('start-commit');
+    const endCommitInput = document.getElementById('end-commit');
+
+    // Load saved data on page load
+    const savedStartCommit = localStorage.getItem('startCommit');
+    const savedEndCommit = localStorage.getItem('endCommit');
+    let savedSelectedFiles = [];
+    try {
+        savedSelectedFiles = JSON.parse(localStorage.getItem('selectedFiles')) || [];
+    } catch (e) {
+        console.error("Error parsing saved selected files:", e);
+        savedSelectedFiles = [];
+    }
+
+    if (savedStartCommit) {
+        startCommitInput.value = savedStartCommit;
+    }
+    if (savedEndCommit) {
+        endCommitInput.value = savedEndCommit;
+    }
+
     // Fetch files and build the file tree
     fetch('/api/files')
         .then(response => response.json())
         .then(files => {
             buildFileTree(files, fileTree);
+            // Apply saved selections after the tree is built
+            applySavedSelections(savedSelectedFiles);
         })
         .catch(error => {
             console.error('Error fetching files:', error);
@@ -17,8 +40,8 @@ document.addEventListener('DOMContentLoaded', () => {
     diffForm.addEventListener('submit', async (event) => {
         event.preventDefault();
 
-        const startCommit = document.getElementById('start-commit').value;
-        const endCommit = document.getElementById('end-commit').value;
+        const startCommit = startCommitInput.value;
+        const endCommit = endCommitInput.value;
         const selectedFiles = getSelectedFiles();
 
         if (!startCommit || !endCommit || selectedFiles.length === 0) {
@@ -41,6 +64,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const diffs = await response.json();
             displayDiffs(diffs);
+
+            // Save data after successful diff generation
+            localStorage.setItem('startCommit', startCommit);
+            localStorage.setItem('endCommit', endCommit);
+            localStorage.setItem('selectedFiles', JSON.stringify(selectedFiles));
 
         } catch (error) {
             console.error('Error fetching diff:', error);
@@ -105,6 +133,23 @@ document.addEventListener('DOMContentLoaded', () => {
             diffContainer.appendChild(content);
             diffSummary.appendChild(diffContainer);
         }
+    }
+
+    // New function to apply saved selections
+    function applySavedSelections(filesToSelect) {
+        if (!filesToSelect || filesToSelect.length === 0) {
+            return;
+        }
+        // Wait for the file tree to be rendered before trying to select checkboxes
+        // This is a simple delay, a more robust solution might use MutationObserver
+        setTimeout(() => {
+            const checkboxes = document.querySelectorAll('#file-tree input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                if (filesToSelect.includes(checkbox.value)) {
+                    checkbox.checked = true;
+                }
+            });
+        }, 100); // Small delay to ensure elements are rendered
     }
 
     function escapeHtml(unsafe) {
