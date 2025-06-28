@@ -107,14 +107,24 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
     function formatDiff(diff) {
         return diff.split('\n').map(line => {
+            const escapedLine = escapeHtml(line);
             if (line.startsWith('+')) {
-                return `<span class="addition">${line}</span>`;
+                return `<span class="addition">${escapedLine}</span>`;
             } else if (line.startsWith('-')) {
-                return `<span class="deletion">${line}</span>`;
+                return `<span class="deletion">${escapedLine}</span>`;
             }
-            return line;
+            return escapedLine;
         }).join('\n');
     }
 });

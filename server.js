@@ -31,7 +31,12 @@ app.post('/api/diff', async (req, res) => {
     try {
         const diffs = {};
         for (const file of files) {
-            const diff = await git.diff([`${startCommit}..${endCommit}`, '--', file]);
+            let diff = await git.diff([`${startCommit}..${endCommit}`, '--', file]);
+
+            if (!diff) { // If diff is empty, it means the file is either new or unchanged
+                const fileContent = await git.show([`${endCommit}:${file}`]);
+                diff = fileContent.split('\n').map(line => `+${line}`).join('\n');
+            }
             diffs[file] = diff;
         }
         res.json(diffs);
