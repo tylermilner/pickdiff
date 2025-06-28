@@ -4,7 +4,7 @@ This document provides specific instructions for AI tools (like GitHub Copilot) 
 
 ### Handling Long-Running Processes (e.g., `npm start`)
 
-When the application's server needs to be running to perform tasks (e.g., `curl` requests to API endpoints, frontend testing), the AI tool **must not** execute `npm start` (or similar commands that start a server) in a way that blocks the terminal or prevents further commands from being issued.
+When the application's server needs to be running to perform tasks (e.g., `curl` requests to API endpoints, frontend testing), the AI tool **must not** execute `npm start` (or similar commands that start a server) in a way that blocks the terminal or prevents further commands from being issued (as of 06/28/2025 when using Gemini CLI).
 
 Instead, if the AI needs the server to be running for subsequent operations, it should:
 
@@ -43,3 +43,7 @@ For testing frontend changes, the AI should instruct the user to manually:
 3.  Manually input commit hashes and select files to test the functionality.
 
 The AI should avoid attempting to automate browser interactions or complex UI testing.
+
+### Git Commit Workflow
+
+Due to limitations in the AI's ability to reliably execute `git commit` commands (as of 06/28/2025 when using Gemini CLI), especially with multi-line messages, the AI will prepare the staging area and then propose the commit message for the user to execute manually. The user should copy the proposed commit message and run `git commit -m "<proposed_message>"` in their terminal.
