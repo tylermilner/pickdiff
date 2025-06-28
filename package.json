@@ -1,0 +1,17 @@
+{
+  "name": "git-changes-summary",
+  "version": "1.0.0",
+  "description": "A simple app to summarize git changes between two commits.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^5.1.0",
+    "simple-git": "^3.28.0"
+  }
+}
