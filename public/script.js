@@ -7,47 +7,52 @@ document.addEventListener('DOMContentLoaded', () => {
     const startCommitInput = document.getElementById('start-commit');
     const endCommitInput = document.getElementById('end-commit');
 
+    let repoPath = '';
+
     // Fetch and display the repository path
     fetch('/api/repo-path')
         .then(response => response.json())
         .then(data => {
-            repoPathSpan.textContent = data.path;
+            repoPath = data.path;
+            repoPathSpan.textContent = repoPath;
+            loadSavedData();
         })
         .catch(error => {
             console.error('Error fetching repository path:', error);
             repoPathSpan.textContent = 'Could not load repository path.';
         });
 
-    // Load saved data on page load
-    const savedStartCommit = localStorage.getItem('startCommit');
-    const savedEndCommit = localStorage.getItem('endCommit');
-    let savedSelectedFiles = [];
-    try {
-        savedSelectedFiles = JSON.parse(localStorage.getItem('selectedFiles')) || [];
-    } catch (e) {
-        console.error("Error parsing saved selected files:", e);
-        savedSelectedFiles = [];
-    }
+    function loadSavedData() {
+        const savedStartCommit = localStorage.getItem(`startCommit_${repoPath}`);
+        const savedEndCommit = localStorage.getItem(`endCommit_${repoPath}`);
+        let savedSelectedFiles = [];
+        try {
+            savedSelectedFiles = JSON.parse(localStorage.getItem(`selectedFiles_${repoPath}`)) || [];
+        } catch (e) {
+            console.error("Error parsing saved selected files:", e);
+            savedSelectedFiles = [];
+        }
 
-    if (savedStartCommit) {
-        startCommitInput.value = savedStartCommit;
-    }
-    if (savedEndCommit) {
-        endCommitInput.value = savedEndCommit;
-    }
+        if (savedStartCommit) {
+            startCommitInput.value = savedStartCommit;
+        }
+        if (savedEndCommit) {
+            endCommitInput.value = savedEndCommit;
+        }
 
-    // Fetch files and build the file tree
-    fetch('/api/files')
-        .then(response => response.json())
-        .then(files => {
-            buildFileTree(files, fileTree);
-            // Apply saved selections after the tree is built
-            applySavedSelections(savedSelectedFiles);
-        })
-        .catch(error => {
-            console.error('Error fetching files:', error);
-            fileTree.innerHTML = '<p class="text-danger">Could not load file tree.</p>';
-        });
+        // Fetch files and build the file tree
+        fetch('/api/files')
+            .then(response => response.json())
+            .then(files => {
+                buildFileTree(files, fileTree);
+                // Apply saved selections after the tree is built
+                applySavedSelections(savedSelectedFiles);
+            })
+            .catch(error => {
+                console.error('Error fetching files:', error);
+                fileTree.innerHTML = '<p class="text-danger">Could not load file tree.</p>';
+            });
+    }
 
     diffForm.addEventListener('submit', async (event) => {
         event.preventDefault();
@@ -78,9 +83,9 @@ document.addEventListener('DOMContentLoaded', () => {
             displayDiffs(diffs);
 
             // Save data after successful diff generation
-            localStorage.setItem('startCommit', startCommit);
-            localStorage.setItem('endCommit', endCommit);
-            localStorage.setItem('selectedFiles', JSON.stringify(selectedFiles));
+            localStorage.setItem(`startCommit_${repoPath}`, startCommit);
+            localStorage.setItem(`endCommit_${repoPath}`, endCommit);
+            localStorage.setItem(`selectedFiles_${repoPath}`, JSON.stringify(selectedFiles));
 
         } catch (error) {
             console.error('Error fetching diff:', error);
