@@ -1,10 +1,22 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const repoPathSpan = document.getElementById('repo-path');
     const fileTree = document.getElementById('file-tree');
     const diffForm = document.getElementById('diff-form');
     const diffSummary = document.getElementById('diff-summary');
 
     const startCommitInput = document.getElementById('start-commit');
     const endCommitInput = document.getElementById('end-commit');
+
+    // Fetch and display the repository path
+    fetch('/api/repo-path')
+        .then(response => response.json())
+        .then(data => {
+            repoPathSpan.textContent = data.path;
+        })
+        .catch(error => {
+            console.error('Error fetching repository path:', error);
+            repoPathSpan.textContent = 'Could not load repository path.';
+        });
 
     // Load saved data on page load
     const savedStartCommit = localStorage.getItem('startCommit');

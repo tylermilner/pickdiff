@@ -37,9 +37,17 @@ To get this application running on your local machine, follow these steps:
 
 ## How to Run
 
-After installation, you can start the application:
+After installation, you can start the application. By default, it will use the current working directory as the Git repository.
 
-### Development
+```bash
+npm start
+```
+
+Alternatively, you can specify a different repository path by providing it as a command-line argument:
+
+```bash
+npm start -- /path/to/your/repo
+```
 
 For development with automatic server restarts on file changes, use:
 
@@ -47,20 +55,14 @@ For development with automatic server restarts on file changes, use:
 npm run dev
 ```
 
-### Production
-
-To run the application in a production environment:
-
-```bash
-npm start
-```
-
-In both cases, the application will be accessible in your web browser, usually at `http://localhost:3000`.
+In all cases, the application will be accessible in your web browser, usually at `http://localhost:3000`.
 
 ## Usage
 
-1.  Open your web browser and navigate to `http://localhost:3000`.
-2.  Enter the **Start Commit** hash and **End Commit** hash in the respective input fields. These can be full commit hashes or any Git reference (e.g., `HEAD~1`, `main`, `develop`).
-3.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
-4.  Click the "Generate Summary" button.
-5.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.
+1.  Start the application using one of the methods above.
+2.  Open your web browser and navigate to `http://localhost:3000`.
+3.  The repository path being used will be displayed at the top of the page.
+4.  Enter the **Start Commit** hash and **End Commit** hash in the respective input fields. These can be full commit hashes or any Git reference (e.g., `HEAD~1`, `main`, `develop`).
+5.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
+6.  Click the "Generate Summary" button.
+7.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.

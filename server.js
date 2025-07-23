@@ -5,11 +5,18 @@ const path = require('path');
 const app = express();
 const port = 3000;
 
-// Use the current working directory for git operations
-const git = simpleGit();
+// Check for a repository path from the command line
+const repoPath = process.argv[2] || process.cwd();
+
+// Use the provided path or the current working directory for git operations
+const git = simpleGit(repoPath);
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.json());
+
+app.get('/api/repo-path', (req, res) => {
+  res.json({ path: repoPath });
+});
 
 app.get('/api/files', async (req, res) => {
   try {
@@ -47,4 +54,5 @@ app.post('/api/diff', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Using repository at: ${repoPath}`);
 });
