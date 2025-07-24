@@ -1,4 +1,4 @@
-# Git Changes Summary
+# PickDiff
 
 A simple frontend web application that runs locally and provides a user-friendly interface to display a visual diff of selected files between two commits in a Git repository.
 
@@ -26,7 +26,7 @@ To get this application running on your local machine, follow these steps:
 
     ```bash
     git clone <repository-url>
-    cd git-changes-summary
+    cd pickdiff
     ```
 
 2.  **Install dependencies:**

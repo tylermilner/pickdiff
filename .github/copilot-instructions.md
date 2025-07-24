@@ -1,4 +1,4 @@
-## Copilot Instructions for `git-changes-summary`
+## Copilot Instructions for `pickdiff`
 
 This document provides specific instructions for AI tools (like GitHub Copilot) when interacting with this repository, especially concerning long-running processes and server management.
 

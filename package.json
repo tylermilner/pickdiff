@@ -1,7 +1,7 @@
 {
-  "name": "git-changes-summary",
+  "name": "pickdiff",
   "version": "1.0.0",
-  "description": "A simple app to summarize git changes between two commits.",
+  "description": "A simple app to pick and summarize git changes.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
