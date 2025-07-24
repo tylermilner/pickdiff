@@ -1,16 +1,16 @@
 {
   "name": "pickdiff",
   "version": "1.0.0",
-  "description": "A simple app to pick and summarize git changes.",
+  "description": "A simple app to selectively diff files between two Git commits.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": ["git", "selective", "file", "diff", "file-selector", "visual-git-diff", "simple-git", "express"],
+  "author": "Tyler Milner",
+  "license": "MIT",
   "dependencies": {
     "express": "^5.1.0",
     "simple-git": "^3.28.0"
