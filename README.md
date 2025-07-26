@@ -66,3 +66,7 @@ In all cases, the application will be accessible in your web browser, usually at
 5.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
 6.  Click the "Generate Summary" button.
 7.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
