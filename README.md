@@ -6,6 +6,8 @@ A simple frontend web application that runs locally and provides a user-friendly
 
 Traditional `git diff` commands can be difficult to read and manage, especially when focusing on specific file changes across different commits. This tool aims to simplify the process by offering a graphical interface to select files and visualize their differences.
 
+![Screenshot of PickDiff](./images/pickdiff-screenshot.png)
+
 ## Features
 
 - Select start and end commits for comparison.
