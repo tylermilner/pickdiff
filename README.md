@@ -59,6 +59,61 @@ npm run dev
 
 In all cases, the application will be accessible in your web browser, usually at `http://localhost:3000`.
 
+## Testing
+
+This project includes comprehensive test coverage using Jest for unit and integration tests, and Playwright for end-to-end tests.
+
+### Unit and Integration Tests
+
+#### Running Unit and Integration Tests
+
+```bash
+# Run all unit and integration tests
+npm test
+
+# Run unit tests in watch mode
+npm run test:watch
+
+# Run unit and integration tests with coverage report
+npm run test:coverage
+
+# Run all tests (unit + integration + e2e)
+npm run test:all
+```
+
+#### Test Structure
+
+- **Unit Tests** (`tests/unit/`): Test the backend API endpoints with mocked dependencies
+- **Integration Tests** (`tests/integration/`): Test the complete backend workflow using real server instances and actual git operations
+
+### End-to-End Tests
+
+#### Setting up Playwright
+
+For end-to-end tests, you'll need to install Playwright browsers:
+
+```bash
+npx playwright install
+```
+
+#### Running End-to-End Tests
+
+```bash
+# Run end-to-end tests (requires Playwright browsers)
+npm run test:e2e
+
+# Run end-to-end tests with UI mode
+npm run test:e2e:ui
+```
+
+#### E2E Test Structure
+
+- **End-to-End Tests** (`tests/e2e/`): Test the complete application workflow using Playwright with real browser automation
+
+### CI/CD
+
+The project includes GitHub Actions workflows that run tests automatically on pull requests and pushes to the main branch. The workflow runs tests on multiple Node.js versions and generates coverage reports.
+
 ## Usage
 
 1.  Start the application using one of the methods above.

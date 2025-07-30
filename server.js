@@ -3,7 +3,7 @@ const simpleGit = require('simple-git');
 const path = require('path');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 // Check for a repository path from the command line
 const repoPath = process.argv[2] || process.cwd();
