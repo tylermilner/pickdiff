@@ -23,6 +23,9 @@ test.describe('PickDiff Application', () => {
     await expect(page.locator('#repo-path')).not.toBeEmpty();
     const repoPath = await page.locator('#repo-path').textContent();
     expect(repoPath).toBeTruthy();
+    
+    // Verify that the repo name 'pickdiff' is in the path
+    expect(repoPath).toContain('pickdiff');
   });
 
   test('should load file tree', async ({ page }) => {
@@ -49,12 +52,18 @@ test.describe('PickDiff Application', () => {
       response.url().includes('/api/files') && response.status() === 200
     );
     
+    // Set up dialog handler to capture the alert
+    let dialogMessage = '';
+    page.on('dialog', async dialog => {
+      dialogMessage = dialog.message();
+      await dialog.accept();
+    });
+    
     // Try to submit form without inputs
     await page.click('button[type="submit"]');
     
-    // Form should not submit without required fields
-    // Check that we're still on the same page (no navigation occurred)
-    expect(page.url()).toContain('localhost:3000');
+    // Verify that the alert dialog was shown with expected message
+    expect(dialogMessage).toBe('Please fill in all fields and select at least one file.');
   });
 
   test('should allow input in commit fields', async ({ page }) => {
