@@ -63,28 +63,35 @@ In all cases, the application will be accessible in your web browser, usually at
 
 This project includes comprehensive test coverage using Jest for unit and integration tests, and Playwright for end-to-end tests.
 
-### Unit and Integration Tests
+- **Unit Tests** (`tests/unit/`): Test the backend API endpoints with mocked dependencies
+- **Integration Tests** (`tests/integration/`): Test the complete backend workflow using real server instances and actual git operations
+- **End-to-End Tests** (`tests/e2e/`): Test the complete application workflow using Playwright with real browser automation
 
-#### Running Unit and Integration Tests
+After installing the Playwright browsers (see below), you can run all the tests (unit + integration + e2e) by executing:
 
 ```bash
-# Run all unit and integration tests
-npm test
-
-# Run unit tests in watch mode
-npm run test:watch
-
-# Run unit and integration tests with coverage report
-npm run test:coverage
-
-# Run all tests (unit + integration + e2e)
 npm run test:all
 ```
 
-#### Test Structure
+### Unit and Integration Tests
 
-- **Unit Tests** (`tests/unit/`): Test the backend API endpoints with mocked dependencies
-- **Integration Tests** (`tests/integration/`): Test the complete backend workflow using real server instances and actual git operations
+Run all unit and integration tests:
+
+```bash
+npm test
+```
+
+Run unit tests in watch mode:
+
+```bash
+npm run test:watch
+```
+
+Run unit and integration tests with coverage report:
+
+```bash
+npm run test:coverage
+```
 
 ### End-to-End Tests
 
@@ -98,17 +105,17 @@ npx playwright install
 
 #### Running End-to-End Tests
 
-```bash
-# Run end-to-end tests (requires Playwright browsers)
-npm run test:e2e
+After installing Playwright browsers, you can run the end-to-end tests:
 
-# Run end-to-end tests with UI mode
-npm run test:e2e:ui
+```bash
+npm run test:e2e
 ```
 
-#### E2E Test Structure
+Run end-to-end tests with UI mode:
 
-- **End-to-End Tests** (`tests/e2e/`): Test the complete application workflow using Playwright with real browser automation
+```bash
+npm run test:e2e:ui
+```
 
 ### CI/CD
 
