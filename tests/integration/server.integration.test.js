@@ -1,42 +1,31 @@
 const request = require('supertest');
-const { spawn } = require('child_process');
 const path = require('path');
+const simpleGit = require('simple-git');
+const { createApp } = require('../../server');
 
 describe('PickDiff Integration Tests', () => {
+  let app;
   let server;
-  let serverUrl = 'http://localhost:3001'; // Use different port to avoid conflicts
-  
-  beforeAll(async () => {
-    // Start the actual server for integration testing
-    server = spawn('node', ['server.js'], {
-      cwd: path.join(__dirname, '../..'),
-      env: { ...process.env, PORT: '3001' },
-      stdio: 'pipe'
-    });
-    
-    // Wait for server to start
-    await new Promise((resolve) => {
-      server.stdout.on('data', (data) => {
-        if (data.toString().includes('Server is running')) {
-          resolve();
-        }
-      });
-    });
+
+  beforeAll(() => {
+    // Use the real simpleGit and repoPath for integration
+    const repoPath = path.join(__dirname, '../..');
+    const git = simpleGit(repoPath);
+    app = createApp(git, repoPath);
+    server = app.listen(); // Let the OS pick an available port
   });
-  
-  afterAll(async () => {
+
+  afterAll((done) => {
     if (server) {
-      server.kill();
-      // Wait for server to shut down
-      await new Promise((resolve) => {
-        server.on('close', resolve);
-      });
+      server.close(done);
+    } else {
+      done();
     }
   });
 
   describe('Real API Integration', () => {
     it('should serve the main HTML page', async () => {
-      const response = await request(serverUrl)
+      const response = await request(server)
         .get('/')
         .expect(200);
       
@@ -45,7 +34,7 @@ describe('PickDiff Integration Tests', () => {
     });
 
     it('should return repository path from real git repo', async () => {
-      const response = await request(serverUrl)
+      const response = await request(server)
         .get('/api/repo-path')
         .expect('Content-Type', /json/)
         .expect(200);
@@ -55,7 +44,7 @@ describe('PickDiff Integration Tests', () => {
     });
 
     it('should return actual files from the repository', async () => {
-      const response = await request(serverUrl)
+      const response = await request(server)
         .get('/api/files')
         .expect('Content-Type', /json/)
         .expect(200);
@@ -70,7 +59,7 @@ describe('PickDiff Integration Tests', () => {
     });
 
     it('should serve static files correctly', async () => {
-      const response = await request(serverUrl)
+      const response = await request(server)
         .get('/script.js')
         .expect(200);
       
@@ -88,7 +77,7 @@ describe('PickDiff Integration Tests', () => {
       if (commits.length >= 2) {
         const [endCommit, startCommit] = commits;
         
-        const response = await request(serverUrl)
+        const response = await request(server)
           .post('/api/diff')
           .send({
             startCommit: startCommit,
@@ -103,7 +92,7 @@ describe('PickDiff Integration Tests', () => {
     });
 
     it('should return 400 for invalid diff request', async () => {
-      const response = await request(serverUrl)
+      const response = await request(server)
         .post('/api/diff')
         .send({
           startCommit: 'invalid',

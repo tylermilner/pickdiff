@@ -1,10 +1,9 @@
-const request = require('supertest');
-const express = require('express');
-const path = require('path');
-const simpleGit = require('simple-git');
-
-// Mock simple-git
+// Mock simple-git before importing the app
 jest.mock('simple-git');
+const simpleGit = require('simple-git');
+const request = require('supertest');
+const { createApp } = require('../../server');
+
 
 describe('PickDiff Server API', () => {
   let app;
@@ -23,51 +22,9 @@ describe('PickDiff Server API', () => {
     
     // Mock simple-git to return our mock instance
     simpleGit.mockReturnValue(mockGit);
-    
+
     // Recreate the app for each test to ensure clean state
-    app = express();
-    const repoPath = process.cwd();
-    const git = simpleGit(repoPath);
-
-    app.use(express.static(path.join(__dirname, '../../public')));
-    app.use(express.json());
-
-    app.get('/api/repo-path', (req, res) => {
-      res.json({ path: repoPath });
-    });
-
-    app.get('/api/files', async (req, res) => {
-      try {
-        const files = (await git.raw(['ls-files'])).split('\n').filter(Boolean);
-        res.json(files);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    });
-
-    app.post('/api/diff', async (req, res) => {
-      const { startCommit, endCommit, files } = req.body;
-
-      if (!startCommit || !endCommit || !files || !Array.isArray(files)) {
-        return res.status(400).json({ error: 'Missing required parameters.' });
-      }
-
-      try {
-        const diffs = {};
-        for (const file of files) {
-          let diff = await git.diff([`${startCommit}..${endCommit}`, '--', file]);
-
-          if (!diff) {
-            const fileContent = await git.show([`${endCommit}:${file}`]);
-            diff = fileContent.split('\n').map(line => `+${line}`).join('\n');
-          }
-          diffs[file] = diff;
-        }
-        res.json(diffs);
-      } catch (error) {
-        res.status(500).json({ error: error.message });
-      }
-    });
+    app = createApp(mockGit, '/test/repo');
   });
 
   describe('GET /api/repo-path', () => {
