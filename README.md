@@ -14,12 +14,6 @@ Traditional `git diff` commands can be difficult to read and manage, especially 
 - Browse and select specific files from the repository to diff.
 - View a color-coded, line-by-line diff for selected files.
 
-## Technologies Used
-
-- **Backend:** Node.js with Express.js
-- **Git Integration:** `simple-git` library
-- **Frontend:** HTML, CSS (Bootstrap), JavaScript
-
 ## Setup and Installation
 
 To get this application running on your local machine, follow these steps:
@@ -58,6 +52,22 @@ npm run dev
 ```
 
 In all cases, the application will be accessible in your web browser, usually at `http://localhost:3000`.
+
+## Usage
+
+1.  Start the application using one of the methods above.
+2.  Open your web browser and navigate to `http://localhost:3000`.
+3.  The repository path being used will be displayed at the top of the page.
+4.  Enter the **Start Commit** hash and **End Commit** hash in the respective input fields. These can be full commit hashes or any Git reference (e.g., `HEAD~1`, `main`, `develop`).
+5.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
+6.  Click the "Generate Summary" button.
+7.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.
+
+## Technologies Used
+
+- **Backend:** Node.js with Express.js
+- **Git Integration:** `simple-git` library
+- **Frontend:** HTML, CSS (Bootstrap), JavaScript
 
 ## Testing
 
@@ -120,16 +130,6 @@ npm run test:e2e:ui
 ### CI/CD
 
 The project includes GitHub Actions workflows that run tests automatically on pull requests and pushes to the main branch. The workflow runs tests on multiple Node.js versions and generates coverage reports.
-
-## Usage
-
-1.  Start the application using one of the methods above.
-2.  Open your web browser and navigate to `http://localhost:3000`.
-3.  The repository path being used will be displayed at the top of the page.
-4.  Enter the **Start Commit** hash and **End Commit** hash in the respective input fields. These can be full commit hashes or any Git reference (e.g., `HEAD~1`, `main`, `develop`).
-5.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
-6.  Click the "Generate Summary" button.
-7.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.
 
 ## License
 
