@@ -32,7 +32,7 @@
     "simple-git": "^3.28.0"
   },
   "devDependencies": {
-    "@playwright/test": "^1.54.1",
+    "@playwright/test": "^1.54.2",
     "jest": "^30.0.5",
     "supertest": "^7.1.4"
   }
