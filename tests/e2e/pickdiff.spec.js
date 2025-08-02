@@ -105,15 +105,30 @@ test.describe('PickDiff Application', () => {
   });
 
   test('should persist form data in localStorage', async ({ page }) => {
+    const { execSync } = require('child_process');
+    const repoPath = require('path').join(__dirname, '../../');
+    const commits = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: 'utf8'
+    }).trim().split('\n');
+    const [endCommit, startCommit] = commits;
+    
     await page.goto('/');
-    
-    const startCommit = 'test123';
-    const endCommit = 'test456';
-    
-    // Fill in form data
+
+    // Fill in form data with real commit hashes
     await page.fill('#start-commit', startCommit);
     await page.fill('#end-commit', endCommit);
     
+    // Select at least one file (required for form submission)
+    const firstCheckbox = page.locator('#file-tree input[type="checkbox"]').first();
+    await firstCheckbox.check();
+
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed (ensures form submission completed)
+    await expect(page.locator('.diff-container')).toBeVisible();
+
     // Reload page
     await page.reload();
     
