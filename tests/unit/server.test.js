@@ -36,6 +36,7 @@ describe('PickDiff Server API', () => {
 
       expect(response.body).toHaveProperty('path');
       expect(typeof response.body.path).toBe('string');
+      expect(response.body.path).toBe('/test/repo');
     });
   });
 
