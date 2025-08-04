@@ -1,7 +1,7 @@
 const request = require('supertest');
 const path = require('path');
 const simpleGit = require('simple-git');
-const { createApp } = require('../../server');
+const { createApp } = require('../../dist/server');
 
 describe('PickDiff Integration Tests', () => {
   let app;
@@ -60,7 +60,7 @@ describe('PickDiff Integration Tests', () => {
       
       // Should contain some of our known files
       expect(response.body).toContain('package.json');
-      expect(response.body).toContain('server.js');
+      expect(response.body).toContain('server.ts');
       expect(response.body).toContain('README.md');
     });
 
