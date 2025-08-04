@@ -82,24 +82,26 @@ describe('PickDiff Integration Tests', () => {
         cwd: path.join(__dirname, '../..'),
         encoding: 'utf8'
       }).trim().split('\n');
-      
-      if (commits.length >= 2) {
-        const [endCommit, startCommit] = commits;
-        
-        // Act
-        const response = await request(server)
-          .post('/api/diff')
-          .send({
-            startCommit: startCommit,
-            endCommit: endCommit,
-            files: ['package.json']
-          })
-          .expect('Content-Type', /json/)
-          .expect(200);
 
-        // Assert
-        expect(response.body['package.json']).toBeDefined();
+      if (commits.length < 2) {
+        throw new Error('Not enough commits in the repository to run this test. At least 2 commits are required.');
       }
+
+      const [endCommit, startCommit] = commits;
+
+      // Act
+      const response = await request(server)
+        .post('/api/diff')
+        .send({
+          startCommit: startCommit,
+          endCommit: endCommit,
+          files: ['package.json']
+        })
+        .expect('Content-Type', /json/)
+        .expect(200);
+
+      // Assert
+      expect(response.body['package.json']).toBeDefined();
     });
 
     it('should return 400 for invalid diff request', async () => {
