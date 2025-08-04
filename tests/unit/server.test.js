@@ -2,7 +2,7 @@
 jest.mock('simple-git');
 const simpleGit = require('simple-git');
 const request = require('supertest');
-const { createApp } = require('../../server');
+const { createApp } = require('../../dist/server');
 
 
 describe('PickDiff Server API', () => {

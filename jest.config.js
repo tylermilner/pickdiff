@@ -5,7 +5,7 @@ module.exports = {
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  testMatch: ['**/tests/**/*.test.js', '**/tests/**/*.test.ts'],
+  testMatch: ['**/tests/**/*.test.js'],
   collectCoverageFrom: [
     '*.ts',
     '!node_modules/**',

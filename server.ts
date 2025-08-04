@@ -20,7 +20,17 @@ interface RepoPathResponse {
 
 function createApp(git: SimpleGit, repoPath: string): Application {
   const app = express();
-  app.use(express.static(path.join(__dirname, '../public')));
+  
+  // Serve static files but exclude TypeScript config files and source files
+  app.use(express.static(path.join(__dirname, '../public'), {
+    dotfiles: 'deny',
+    setHeaders: (res, path) => {
+      if (path.endsWith('tsconfig.json') || path.endsWith('.ts')) {
+        res.status(404).end();
+        return;
+      }
+    }
+  }));
   app.use(express.json());
 
   app.get('/api/repo-path', (req: Request, res: Response<RepoPathResponse>) => {
