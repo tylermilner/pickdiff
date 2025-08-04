@@ -20,7 +20,7 @@ interface RepoPathResponse {
 
 function createApp(git: SimpleGit, repoPath: string): Application {
   const app = express();
-  app.use(express.static(path.join(__dirname, 'public')));
+  app.use(express.static(path.join(__dirname, '../public')));
   app.use(express.json());
 
   app.get('/api/repo-path', (req: Request, res: Response<RepoPathResponse>) => {
