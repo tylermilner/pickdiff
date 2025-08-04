@@ -6,13 +6,34 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e"
   },
-  "keywords": ["git", "selective", "file", "diff", "file-selector", "visual-git-diff", "simple-git", "express"],
+  "keywords": [
+    "git",
+    "selective",
+    "file",
+    "diff",
+    "file-selector",
+    "visual-git-diff",
+    "simple-git",
+    "express"
+  ],
   "author": "Tyler Milner",
   "license": "MIT",
   "dependencies": {
     "express": "^5.1.0",
     "simple-git": "^3.28.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.54.2",
+    "jest": "^30.0.5",
+    "supertest": "^7.1.4"
   }
 }
