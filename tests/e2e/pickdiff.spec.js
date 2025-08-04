@@ -3,8 +3,10 @@ const { test, expect } = require('@playwright/test');
 
 test.describe('PickDiff Application', () => {
   test('should load the main page successfully', async ({ page }) => {
+    // Act
     await page.goto('/');
     
+    // Assert
     // Check that the page title is correct
     await expect(page).toHaveTitle('PickDiff');
     
@@ -17,8 +19,10 @@ test.describe('PickDiff Application', () => {
   });
 
   test('should display repository path', async ({ page }) => {
+    // Act
     await page.goto('/');
     
+    // Assert
     // Wait for repository path to load
     await expect(page.locator('#repo-path')).not.toBeEmpty();
     const repoPath = await page.locator('#repo-path').textContent();
@@ -29,6 +33,7 @@ test.describe('PickDiff Application', () => {
   });
 
   test('should load file tree', async ({ page }) => {
+    // Act
     await page.goto('/');
     
     // Wait for file tree to populate
@@ -36,6 +41,7 @@ test.describe('PickDiff Application', () => {
       response.url().includes('/api/files') && response.status() === 200
     );
     
+    // Assert
     // Check that file tree has content
     const fileTree = page.locator('#file-tree');
     await expect(fileTree).toBeVisible();
@@ -45,6 +51,7 @@ test.describe('PickDiff Application', () => {
   });
 
   test('should validate form inputs before submission', async ({ page }) => {
+    // Arrange
     await page.goto('/');
     
     // Wait for page to fully load
@@ -59,29 +66,35 @@ test.describe('PickDiff Application', () => {
       await dialog.accept();
     });
     
+    // Act
     // Try to submit form without inputs
     await page.click('button[type="submit"]');
     
+    // Assert
     // Verify that the alert dialog was shown with expected message
     expect(dialogMessage).toBe('Please fill in all fields and select at least one file.');
   });
 
   test('should allow input in commit fields', async ({ page }) => {
+    // Arrange
     await page.goto('/');
     
     const startCommit = 'abc123';
     const endCommit = 'def456';
     
+    // Act
     // Fill in commit fields
     await page.fill('#start-commit', startCommit);
     await page.fill('#end-commit', endCommit);
     
+    // Assert
     // Verify inputs were filled
     await expect(page.locator('#start-commit')).toHaveValue(startCommit);
     await expect(page.locator('#end-commit')).toHaveValue(endCommit);
   });
 
   test('should allow file selection', async ({ page }) => {
+    // Arrange
     await page.goto('/');
     
     // Wait for file tree to load
@@ -89,22 +102,28 @@ test.describe('PickDiff Application', () => {
       response.url().includes('/api/files') && response.status() === 200
     );
     
+    // Act
     // Find and check a file checkbox
     const firstCheckbox = page.locator('#file-tree input[type="checkbox"]').first();
     await expect(firstCheckbox).toBeVisible();
     await firstCheckbox.check();
     
+    // Assert
     // Verify checkbox is checked
     await expect(firstCheckbox).toBeChecked();
   });
 
   test('should show API error gracefully', async ({ page }) => {
+    // Act
     // Go to a non-existent API endpoint to test error handling
     const response = await page.request.get('/api/nonexistent');
+
+    // Assert
     expect(response.status()).toBe(404);
   });
 
   test('should persist form data in localStorage', async ({ page }) => {
+    // Arrange
     const { execSync } = require('child_process');
     const repoPath = require('path').join(__dirname, '../../');
     const commits = execSync('git log --oneline -2 --format="%H"', {
@@ -129,9 +148,11 @@ test.describe('PickDiff Application', () => {
     // Wait for diff to be displayed (ensures form submission completed)
     await expect(page.locator('.diff-container')).toBeVisible();
 
+    // Act
     // Reload page
     await page.reload();
     
+    // Assert
     // Check if data persists (the app uses localStorage)
     await expect(page.locator('#start-commit')).toHaveValue(startCommit);
     await expect(page.locator('#end-commit')).toHaveValue(endCommit);

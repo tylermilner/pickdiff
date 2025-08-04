@@ -25,30 +25,36 @@ describe('PickDiff Integration Tests', () => {
 
   describe('Real API Integration', () => {
     it('should serve the main HTML page', async () => {
+      // Act
       const response = await request(server)
         .get('/')
         .expect(200);
       
+      // Assert
       expect(response.text).toContain('<title>PickDiff</title>');
       expect(response.text).toContain('<h1 class="text-center">PickDiff</h1>');
     });
 
     it('should return repository path from real git repo', async () => {
+      // Act
       const response = await request(server)
         .get('/api/repo-path')
         .expect('Content-Type', /json/)
         .expect(200);
 
+      // Assert
       expect(response.body).toHaveProperty('path');
       expect(response.body.path).toContain('pickdiff');
     });
 
     it('should return actual files from the repository', async () => {
+      // Act
       const response = await request(server)
         .get('/api/files')
         .expect('Content-Type', /json/)
         .expect(200);
 
+      // Assert
       expect(Array.isArray(response.body)).toBe(true);
       expect(response.body.length).toBeGreaterThan(0);
       
@@ -59,14 +65,17 @@ describe('PickDiff Integration Tests', () => {
     });
 
     it('should serve static files correctly', async () => {
+      // Act
       const response = await request(server)
         .get('/script.js')
         .expect(200);
       
+      // Assert
       expect(response.text).toContain('document.addEventListener');
     });
 
     it('should handle diff request with real commits', async () => {
+      // Arrange
       // First get the actual commit history
       const { execSync } = require('child_process');
       const commits = execSync('git log --oneline -2 --format="%H"', {
@@ -77,6 +86,7 @@ describe('PickDiff Integration Tests', () => {
       if (commits.length >= 2) {
         const [endCommit, startCommit] = commits;
         
+        // Act
         const response = await request(server)
           .post('/api/diff')
           .send({
@@ -87,11 +97,13 @@ describe('PickDiff Integration Tests', () => {
           .expect('Content-Type', /json/)
           .expect(200);
 
+        // Assert
         expect(response.body['package.json']).toBeDefined();
       }
     });
 
     it('should return 400 for invalid diff request', async () => {
+      // Act
       const response = await request(server)
         .post('/api/diff')
         .send({
@@ -101,6 +113,7 @@ describe('PickDiff Integration Tests', () => {
         .expect('Content-Type', /json/)
         .expect(400);
 
+      // Assert
       expect(response.body).toHaveProperty('error', 'Missing required parameters.');
     });
   });
