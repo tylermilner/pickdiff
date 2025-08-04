@@ -2,10 +2,17 @@
   "name": "pickdiff",
   "version": "1.0.0",
   "description": "A simple app to selectively diff files between two Git commits.",
-  "main": "server.js",
+  "main": "dist/server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js",
+    "build": "tsc",
+    "build:client": "cd public && npx tsc script.ts --lib DOM,DOM.Iterable,ES2017 --target ES2017 --skipLibCheck",
+    "build:all": "npm run build && npm run build:client",
+    "start": "npm run build && node dist/server.js",
+    "dev": "ts-node server.ts",
+    "dev:watch": "ts-node --watch server.ts",
+    "type-check": "tsc --noEmit",
+    "type-check:client": "cd public && npx tsc script.ts --noEmit --lib DOM,DOM.Iterable,ES2017 --target ES2017 --skipLibCheck",
+    "type-check:all": "npm run type-check && npm run type-check:client",
     "test": "jest",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
@@ -33,7 +40,13 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.54.2",
+    "@types/express": "^5.0.3",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.1.0",
     "jest": "^30.0.5",
-    "supertest": "^7.1.4"
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
   }
 }
