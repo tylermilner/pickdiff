@@ -7,3 +7,15 @@ test-results/
 
 # Playwright browsers (if installed locally)
 .playwright/
+
+# TypeScript and build artifacts
+dist/
+*.tsbuildinfo
+
+# Environment files
+.env*
+
+# Editor and OS files
+.DS_Store
+.vscode/
+*.swp
