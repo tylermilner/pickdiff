@@ -33,25 +33,21 @@ To get this application running on your local machine, follow these steps:
 
 ## How to Run
 
-After installation, you can start the application. By default, it will use the current working directory as the Git repository.
+After installation, you can start the application:
 
 ```bash
 npm start
 ```
 
-Alternatively, you can specify a different repository path by providing it as a command-line argument:
+This will automatically compile the TypeScript code and start the server.
+
+By default, it will use the current working directory as the Git repository. Alternatively, you can specify a different repository path by providing it as a command-line argument:
 
 ```bash
 npm start -- /path/to/your/repo
 ```
 
-For development with automatic server restarts on file changes, use:
-
-```bash
-npm run dev
-```
-
-In all cases, the application will be accessible in your web browser, usually at `http://localhost:3000`.
+Once started, the application will be accessible in your web browser at `http://localhost:3000`.
 
 ## Usage
 
@@ -63,9 +59,29 @@ In all cases, the application will be accessible in your web browser, usually at
 6.  Click the "Generate Summary" button.
 7.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.
 
+## Development
+
+For development with automatic server restarts on file changes, use:
+
+```bash
+npm run dev -- /path/to/your/repo
+```
+
+Clean the build directory:
+
+```bash
+npm run clean
+```
+
+The source code is located in the `src/` directory and is written in TypeScript. The compiled JavaScript output goes to the `dist/` directory.
+
+- **Source files**: `src/server.ts`
+- **Compiled files**: `dist/server.js`
+- **Type definitions**: `dist/server.d.ts`
+
 ## Technologies Used
 
-- **Backend:** Node.js with Express.js
+- **Backend:** Node.js with Express.js and TypeScript
 - **Git Integration:** `simple-git` library
 - **Frontend:** HTML, CSS (Bootstrap), JavaScript
 
@@ -91,13 +107,25 @@ Run all unit and integration tests:
 npm test
 ```
 
-Run unit tests in watch mode:
+Run unit tests only:
+
+```bash
+npm run test:unit
+```
+
+Run integration tests only:
+
+```bash
+npm run test:integration
+```
+
+Run tests in watch mode (automatically re-run when files change):
 
 ```bash
 npm run test:watch
 ```
 
-Run unit and integration tests with coverage report:
+Run tests with coverage report:
 
 ```bash
 npm run test:coverage
