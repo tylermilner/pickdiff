@@ -1,11 +1,13 @@
-module.exports = {
+import type { Config } from 'jest';
+
+const config: Config = {
   preset: 'ts-jest',
   testEnvironment: 'node',
   testTimeout: 10000,
   collectCoverage: true,
   coverageDirectory: 'coverage',
   coverageReporters: ['text', 'lcov', 'html'],
-  testMatch: ['**/tests/**/*.test.ts', '**/tests/**/*.test.js'],
+  testMatch: ['**/tests/**/*.test.ts'],
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
@@ -15,7 +17,9 @@ module.exports = {
     '!node_modules/**',
     '!coverage/**',
     '!tests/**',
-    '!jest.config.js',
-    '!playwright.config.js'
+    '!jest.config.ts',
+    '!playwright.config.ts'
   ]
 };
+
+export default config;
