@@ -1,16 +1,19 @@
-const request = require('supertest');
-const path = require('path');
-const simpleGit = require('simple-git');
-const { createApp } = require('../../server');
+import request from 'supertest';
+import path from 'path';
+import simpleGit, { SimpleGit } from 'simple-git';
+import { Express } from 'express';
+import { createApp } from '../../src/server';
+import { execSync } from 'child_process';
+import { Server } from 'http';
 
 describe('PickDiff Integration Tests', () => {
-  let app;
-  let server;
+  let app: Express;
+  let server: Server;
 
   beforeAll(() => {
     // Use the real simpleGit and repoPath for integration
-    const repoPath = path.join(__dirname, '../..');
-    const git = simpleGit(repoPath);
+    const repoPath: string = path.join(__dirname, '../..');
+    const git: SimpleGit = simpleGit(repoPath);
     app = createApp(git, repoPath);
     server = app.listen(); // Let the OS pick an available port
   });
@@ -60,7 +63,7 @@ describe('PickDiff Integration Tests', () => {
       
       // Should contain some of our known files
       expect(response.body).toContain('package.json');
-      expect(response.body).toContain('server.js');
+      expect(response.body).toContain('src/server.ts');
       expect(response.body).toContain('README.md');
     });
 
@@ -77,8 +80,7 @@ describe('PickDiff Integration Tests', () => {
     it('should handle diff request with real commits', async () => {
       // Arrange
       // First get the actual commit history
-      const { execSync } = require('child_process');
-      const commits = execSync('git log --oneline -2 --format="%H"', {
+      const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
         cwd: path.join(__dirname, '../..'),
         encoding: 'utf8'
       }).trim().split('\n');
