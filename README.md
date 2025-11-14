@@ -73,17 +73,21 @@ Clean the build directory:
 npm run clean
 ```
 
-The source code is located in the `src/` directory and is written in TypeScript. The compiled JavaScript output goes to the `dist/` directory.
+The backend source code is located in the `src/` directory and is written in TypeScript. The compiled JavaScript output goes to the `dist/` directory. The frontend client script is now also authored in TypeScript and compiled into the `public/` directory.
 
-- **Source files**: `src/server.ts`
-- **Compiled files**: `dist/server.js`
-- **Type definitions**: `dist/server.d.ts`
+- **Backend source file**: `src/server.ts`
+- **Backend compiled file**: `dist/server.js`
+- **Backend type definitions**: `dist/server.d.ts`
+- **Frontend source file**: `frontend/script.ts`
+- **Frontend compiled file**: `public/script.js`
+
+When you run `npm start` or `npm run build`, both backend and frontend TypeScript are compiled. The generated `public/script.js` is ignored by git; make changes in `frontend/script.ts`.
 
 ## Technologies Used
 
 - **Backend:** Node.js with Express.js and TypeScript
 - **Git Integration:** `simple-git` library
-- **Frontend:** HTML, CSS (Bootstrap), JavaScript
+- **Frontend:** HTML, CSS (Bootstrap), TypeScript (compiled to JavaScript)
 
 ## Testing
 

@@ -12,6 +12,10 @@ test-results/
 dist/
 *.tsbuildinfo
 
+# Generated frontend assets (compiled from frontend/*.ts)
+public/script.js
+public/script.js.map
+
 # Environment files
 .env*
 
