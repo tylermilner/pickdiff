@@ -83,6 +83,28 @@ The backend source code is located in the `src/` directory and is written in Typ
 
 When you run `npm start` or `npm run build`, both backend and frontend TypeScript are compiled. The generated `public/script.js` is ignored by git; make changes in `frontend/script.ts`.
 
+### Code Quality
+
+This project uses [Biome](https://biomejs.dev/) for linting and formatting JavaScript/TypeScript code. Biome provides fast, modern linting and formatting with zero configuration.
+
+Run the linter to check for issues:
+
+```bash
+npm run lint
+```
+
+Automatically fix linting and formatting issues:
+
+```bash
+npm run lint:fix
+```
+
+Format code:
+
+```bash
+npm run format
+```
+
 ## Technologies Used
 
 - **Backend:** Node.js with Express.js and TypeScript
