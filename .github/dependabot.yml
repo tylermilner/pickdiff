@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+# Minimal configuration: weekly checks for root npm dependencies and GitHub Actions.
+# Security alerts still appear outside this schedule.
+# Docs: https://docs.github.com/code-security/dependabot
