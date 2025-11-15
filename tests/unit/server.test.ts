@@ -1,30 +1,31 @@
-// Mock simple-git before importing the app
-jest.mock('simple-git');
-const simpleGit = require('simple-git');
-const request = require('supertest');
-const { createApp } = require('../../dist/server');
+import request from 'supertest';
+import { Express } from 'express';
+import { SimpleGit } from 'simple-git';
+import { createApp } from '../../src/server';
 
+interface MockGit {
+  raw: jest.Mock;
+  diff: jest.Mock;
+  show: jest.Mock;
+}
 
 describe('PickDiff Server API', () => {
-  let app;
-  let mockGit;
+  let app: Express;
+  let mockGit: MockGit;
 
   beforeEach(() => {
     // Clear all mocks before each test
     jest.clearAllMocks();
     
-    // Create mock git instance
+    // Create mock git instance with proper typing
     mockGit = {
       raw: jest.fn(),
       diff: jest.fn(),
       show: jest.fn()
     };
-    
-    // Mock simple-git to return our mock instance
-    simpleGit.mockReturnValue(mockGit);
 
     // Recreate the app for each test to ensure clean state
-    app = createApp(mockGit, '/test/repo');
+    app = createApp(mockGit as unknown as SimpleGit, '/test/repo');
   });
 
   describe('GET /api/repo-path', () => {
@@ -86,6 +87,20 @@ describe('PickDiff Server API', () => {
       // Assert
       expect(response.body).toEqual(['file1.js', 'file2.js']);
     });
+
+    it('should handle non-Error exceptions', async () => {
+      // Arrange
+      mockGit.raw.mockRejectedValue('String error');
+
+      // Act
+      const response = await request(app)
+        .get('/api/files')
+        .expect('Content-Type', /json/)
+        .expect(500);
+
+      // Assert
+      expect(response.body).toHaveProperty('error', 'Failed to list files');
+    });
   });
 
   describe('POST /api/diff', () => {
@@ -97,11 +112,12 @@ describe('PickDiff Server API', () => {
 
     it('should return diffs for specified files', async () => {
       // Arrange
-      mockGit.diff.mockImplementation((args) => {
-        if (args.includes('file1.js')) {
+      mockGit.diff.mockImplementation((...args: any[]) => {
+        const argsArray = args.flat();
+        if (argsArray.includes('file1.js')) {
           return Promise.resolve('-old line\n+new line');
         }
-        if (args.includes('file2.js')) {
+        if (argsArray.includes('file2.js')) {
           return Promise.resolve('+added line');
         }
         return Promise.resolve('');
@@ -229,6 +245,20 @@ describe('PickDiff Server API', () => {
 
       // Assert
       expect(response.body).toHaveProperty('error', 'Git show error');
+    });
+
+    it('should handle non-Error exceptions in diff', async () => {
+      // Arrange
+      mockGit.diff.mockRejectedValue('String error');
+
+      // Act
+      const response = await request(app)
+        .post('/api/diff')
+        .send(validRequestBody)
+        .expect(500);
+
+      // Assert
+      expect(response.body).toHaveProperty('error', 'Failed to get diffs');
     });
   });
 });

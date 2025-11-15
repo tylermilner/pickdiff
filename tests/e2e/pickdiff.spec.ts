@@ -1,5 +1,6 @@
-// @ts-check
-const { test, expect } = require('@playwright/test');
+import { test, expect } from '@playwright/test';
+import { execSync } from 'child_process';
+import path from 'path';
 
 test.describe('PickDiff Application', () => {
   test('should load the main page successfully', async ({ page }) => {
@@ -25,7 +26,7 @@ test.describe('PickDiff Application', () => {
     // Assert
     // Wait for repository path to load
     await expect(page.locator('#repo-path')).not.toBeEmpty();
-    const repoPath = await page.locator('#repo-path').textContent();
+    const repoPath: string | null = await page.locator('#repo-path').textContent();
     expect(repoPath).toBeTruthy();
     
     // Verify that the repo name 'pickdiff' is in the path
@@ -60,7 +61,7 @@ test.describe('PickDiff Application', () => {
     );
     
     // Set up dialog handler to capture the alert
-    let dialogMessage = '';
+    let dialogMessage: string = '';
     page.on('dialog', async dialog => {
       dialogMessage = dialog.message();
       await dialog.accept();
@@ -79,8 +80,8 @@ test.describe('PickDiff Application', () => {
     // Arrange
     await page.goto('/');
     
-    const startCommit = 'abc123';
-    const endCommit = 'def456';
+    const startCommit: string = 'abc123';
+    const endCommit: string = 'def456';
     
     // Act
     // Fill in commit fields
@@ -124,9 +125,8 @@ test.describe('PickDiff Application', () => {
 
   test('should persist form data in localStorage', async ({ page }) => {
     // Arrange
-    const { execSync } = require('child_process');
-    const repoPath = require('path').join(__dirname, '../../');
-    const commits = execSync('git log --oneline -2 --format="%H"', {
+    const repoPath: string = path.join(__dirname, '../../');
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
       cwd: repoPath,
       encoding: 'utf8'
     }).trim().split('\n');

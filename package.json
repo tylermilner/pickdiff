@@ -4,18 +4,25 @@
   "description": "A simple app to selectively diff files between two Git commits.",
   "main": "dist/server.js",
   "scripts": {
-    "build": "tsc && cd public && npx tsc script.ts --lib DOM,DOM.Iterable,ES2017 --target ES2017 --skipLibCheck",
-    "start": "npm run build && node dist/server.js",
-    "dev": "ts-node --watch server.ts",
-    "type-check": "tsc --noEmit && cd public && npx tsc script.ts --noEmit --lib DOM,DOM.Iterable,ES2017 --target ES2017 --skipLibCheck",
+    "prestart": "npm run build",
+    "start": "node dist/server.js",
+    "build": "npm run build:backend && npm run build:frontend",
+    "build:backend": "tsc -p tsconfig.json",
+    "build:frontend": "tsc -p tsconfig.frontend.json",
+    "build:watch": "concurrently \"npm run build:backend -- --watch\" \"npm run build:frontend -- --watch\"",
+    "clean": "rm -rf dist public/script.js public/script.js.map",
+    "type-check": "tsc --noEmit && tsc -p tsconfig.frontend.json --noEmit",
+    "dev": "ts-node src/server.ts",
+    "dev:watch": "ts-node --watch src/server.ts",
+    "prod": "npm run build && npm start",
     "test": "jest",
     "test:unit": "jest tests/unit",
     "test:integration": "jest tests/integration",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e"
+    "test:all": "npm run test:unit && npm run test:integration && npm run test:e2e",
+    "test:coverage": "jest --coverage",
+    "test:watch": "jest --watch"
   },
   "keywords": [
     "git",
@@ -34,13 +41,15 @@
     "simple-git": "^3.28.0"
   },
   "devDependencies": {
+    "concurrently": "^9.2.1",
     "@playwright/test": "^1.54.2",
     "@types/express": "^5.0.3",
     "@types/jest": "^30.0.0",
-    "@types/node": "^24.1.0",
+    "@types/node": "^24.3.0",
+    "@types/supertest": "^6.0.3",
     "jest": "^30.0.5",
     "supertest": "^7.1.4",
-    "ts-jest": "^29.4.1",
+    "ts-jest": "^29.4.4",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }

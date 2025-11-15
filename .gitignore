@@ -1,10 +1,5 @@
 node_modules
 
-# TypeScript build output
-dist/
-*.js.map
-*.d.ts.map
-
 # Test coverage and reports
 coverage/
 playwright-report/
@@ -12,3 +7,19 @@ test-results/
 
 # Playwright browsers (if installed locally)
 .playwright/
+
+# TypeScript and build artifacts
+dist/
+*.tsbuildinfo
+
+# Generated frontend assets (compiled from frontend/*.ts)
+public/script.js
+public/script.js.map
+
+# Environment files
+.env*
+
+# Editor and OS files
+.DS_Store
+.vscode/
+*.swp
