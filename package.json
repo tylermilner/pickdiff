@@ -11,6 +11,7 @@
     "build:frontend": "tsc -p tsconfig.frontend.json",
     "build:watch": "concurrently \"npm run build:backend -- --watch\" \"npm run build:frontend -- --watch\"",
     "clean": "rm -rf dist public/script.js public/script.js.map",
+    "type-check": "tsc --noEmit && tsc -p tsconfig.frontend.json --noEmit",
     "dev": "ts-node src/server.ts",
     "dev:watch": "ts-node --watch src/server.ts",
     "prod": "npm run build && npm start",
