@@ -71,9 +71,21 @@ if (require.main === module) {
   const repoPath: string = process.argv[2] || process.cwd();
   const git: SimpleGit = simpleGit(repoPath);
   const app: Express = createApp(git, repoPath);
-  app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+  app.listen(port, async () => {
+    const url = `http://localhost:${port}`;
+    console.log(`Server is running on ${url}`);
     console.log(`Using repository at: ${repoPath}`);
+
+    // Auto-open browser
+    try {
+      const open = (await import("open")).default;
+      await open(url);
+      console.log(`Browser opened to ${url}`);
+    } catch (error) {
+      console.error(
+        `Failed to open browser: ${error instanceof Error ? error.message : "Unknown error"}`,
+      );
+    }
   });
 }
 
