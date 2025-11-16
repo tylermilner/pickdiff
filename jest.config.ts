@@ -1,25 +1,25 @@
-import type { Config } from 'jest';
+import type { Config } from "jest";
 
 const config: Config = {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
+  preset: "ts-jest",
+  testEnvironment: "node",
   testTimeout: 10000,
   collectCoverage: true,
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
-  testMatch: ['**/tests/**/*.test.ts'],
+  coverageDirectory: "coverage",
+  coverageReporters: ["text", "lcov", "html"],
+  testMatch: ["**/tests/**/*.test.ts"],
   transform: {
-    '^.+\\.ts$': 'ts-jest',
+    "^.+\\.ts$": "ts-jest",
   },
   collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!node_modules/**',
-    '!coverage/**',
-    '!tests/**',
-    '!jest.config.ts',
-    '!playwright.config.ts'
-  ]
+    "src/**/*.ts",
+    "!src/**/*.d.ts",
+    "!node_modules/**",
+    "!coverage/**",
+    "!tests/**",
+    "!jest.config.ts",
+    "!playwright.config.ts",
+  ],
 };
 
 export default config;
