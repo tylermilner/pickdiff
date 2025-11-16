@@ -166,7 +166,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function createTreeHtml(tree: FileTreeNode, path: string = ""): string {
     let html = '<ul class="list-unstyled">';
     for (const key in tree) {
-      if (!Object.hasOwn(tree, key)) continue;
+      if (!Object.keys(tree).includes(key)) continue;
       const newPath = path ? `${path}/${key}` : key;
       if (tree[key].isFile) {
         html += `<li><input type="checkbox" value="${escapeHtml(newPath)}" class="mr-2">${escapeHtml(key)}</li>`;
@@ -188,7 +188,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function displayDiffs(diffs: DiffResponse): void {
     if (diffSummary) diffSummary.innerHTML = "";
     for (const file in diffs) {
-      if (!Object.hasOwn(diffs, file)) continue;
+      if (!Object.keys(diffs).includes(file)) continue;
       const diffContainer = document.createElement("div");
       diffContainer.className = "diff-container";
 
