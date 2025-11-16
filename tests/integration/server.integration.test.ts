@@ -1,7 +1,7 @@
-import { execSync } from "child_process";
+import { execSync } from "node:child_process";
+import type { Server } from "node:http";
+import path from "node:path";
 import type { Express } from "express";
-import type { Server } from "http";
-import path from "path";
 import simpleGit, { type SimpleGit } from "simple-git";
 import request from "supertest";
 import { createApp } from "../../src/server";

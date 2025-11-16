@@ -5,18 +5,7 @@ interface DiffResponse {
   [file: string]: string;
 }
 
-type FileTreeNode =
-  | { [name: string]: FileTreeNode & { isFile?: boolean } }
-  | { isFile?: boolean };
-
-// Utility type guards
-function isInput(el: Element | null): el is HTMLInputElement {
-  return !!el && el instanceof HTMLInputElement;
-}
-
-function isHTMLElement(el: Element | null): el is HTMLElement {
-  return !!el && el instanceof HTMLElement;
-}
+type FileTreeNode = { [name: string]: FileTreeNode } & { isFile?: boolean };
 
 document.addEventListener("DOMContentLoaded", () => {
   const repoPathSpan = document.getElementById(
@@ -84,8 +73,12 @@ document.addEventListener("DOMContentLoaded", () => {
       savedSelectedFiles = [];
     }
 
-    if (savedStartCommit) startCommitInput!.value = savedStartCommit;
-    if (savedEndCommit) endCommitInput!.value = savedEndCommit;
+    if (savedStartCommit && startCommitInput) {
+      startCommitInput.value = savedStartCommit;
+    }
+    if (savedEndCommit && endCommitInput) {
+      endCommitInput.value = savedEndCommit;
+    }
 
     // Fetch files and build the file tree
     fetch("/api/files")
@@ -94,14 +87,18 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!Array.isArray(files)) {
           throw new Error("Files response is not an array");
         }
-        buildFileTree(files, fileTree!);
+        if (fileTree) {
+          buildFileTree(files, fileTree);
+        }
         // Apply saved selections after the tree is built
         applySavedSelections(savedSelectedFiles);
       })
       .catch((error) => {
         console.error("Error fetching files:", error);
-        fileTree!.innerHTML =
-          '<p class="text-danger">Could not load file tree.</p>';
+        if (fileTree) {
+          fileTree.innerHTML =
+            '<p class="text-danger">Could not load file tree.</p>';
+        }
       });
   }
 
@@ -147,11 +144,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   function buildFileTree(files: string[], container: HTMLElement): void {
-    type TreeNode = { [key: string]: TreeNode } & { isFile?: boolean };
-    const tree: TreeNode = {} as TreeNode;
+    const tree: FileTreeNode = {};
 
     files.forEach((file) => {
-      let currentLevel: any = tree; // iterative building
+      let currentLevel = tree; // iterative building
       const parts = file.split("/");
       parts.forEach((part, index) => {
         if (!currentLevel[part]) {
@@ -167,10 +163,10 @@ document.addEventListener("DOMContentLoaded", () => {
     container.innerHTML = createTreeHtml(tree);
   }
 
-  function createTreeHtml(tree: any, path: string = ""): string {
+  function createTreeHtml(tree: FileTreeNode, path: string = ""): string {
     let html = '<ul class="list-unstyled">';
     for (const key in tree) {
-      if (!Object.prototype.hasOwnProperty.call(tree, key)) continue;
+      if (!Object.hasOwn(tree, key)) continue;
       const newPath = path ? `${path}/${key}` : key;
       if (tree[key].isFile) {
         html += `<li><input type="checkbox" value="${escapeHtml(newPath)}" class="mr-2">${escapeHtml(key)}</li>`;
@@ -190,9 +186,9 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function displayDiffs(diffs: DiffResponse): void {
-    diffSummary!.innerHTML = "";
+    if (diffSummary) diffSummary.innerHTML = "";
     for (const file in diffs) {
-      if (!Object.prototype.hasOwnProperty.call(diffs, file)) continue;
+      if (!Object.hasOwn(diffs, file)) continue;
       const diffContainer = document.createElement("div");
       diffContainer.className = "diff-container";
 
@@ -206,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       diffContainer.appendChild(header);
       diffContainer.appendChild(content);
-      diffSummary!.appendChild(diffContainer);
+      diffSummary?.appendChild(diffContainer);
     }
   }
 

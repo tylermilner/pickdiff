@@ -110,7 +110,7 @@ describe("PickDiff Server API", () => {
 
     it("should return diffs for specified files", async () => {
       // Arrange
-      mockGit.diff.mockImplementation((...args: any[]) => {
+      mockGit.diff.mockImplementation((...args: unknown[]) => {
         const argsArray = args.flat();
         if (argsArray.includes("file1.js")) {
           return Promise.resolve("-old line\n+new line");

@@ -1,5 +1,5 @@
+import path from "node:path";
 import express, { type Express, type Request, type Response } from "express";
-import path from "path";
 import simpleGit, { type SimpleGit } from "simple-git";
 
 function createApp(git: SimpleGit, repoPath: string): Express {
@@ -7,11 +7,11 @@ function createApp(git: SimpleGit, repoPath: string): Express {
   app.use(express.static(path.join(__dirname, "..", "public")));
   app.use(express.json());
 
-  app.get("/api/repo-path", (req: Request, res: Response) => {
+  app.get("/api/repo-path", (_req: Request, res: Response) => {
     res.json({ path: repoPath });
   });
 
-  app.get("/api/files", async (req: Request, res: Response) => {
+  app.get("/api/files", async (_req: Request, res: Response) => {
     try {
       // Using git ls-files to get all tracked files
       const filesOutput: string = await git.raw(["ls-files"]);

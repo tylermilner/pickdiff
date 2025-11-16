@@ -1,6 +1,6 @@
+import { execSync } from "node:child_process";
+import path from "node:path";
 import { expect, test } from "@playwright/test";
-import { execSync } from "child_process";
-import path from "path";
 
 test.describe("PickDiff Application", () => {
   test("should load the main page successfully", async ({ page }) => {
