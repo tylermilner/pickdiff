@@ -1,10 +1,10 @@
 # PickDiff
 
-A simple frontend web application that runs locally and provides a user-friendly interface to display a visual diff of selected files between two commits in a Git repository.
+A simple app to display a visual diff of selected files between two commits in a Git repository.
 
-## Problem Solved
+## Why?
 
-Traditional `git diff` commands can be difficult to read and manage, especially when focusing on specific file changes across different commits. This tool aims to simplify the process by offering a graphical interface to select files and visualize their differences.
+Traditional `git diff` commands can be difficult to read and manage, especially when focusing on specific file changes across different commits. This tool aims to simplify the process by offering a graphical interface to select files and visualize their differences. Since it runs locally in the browser, it's also easy to export the output to HTML or PDF for use with LLMs or similar tools.
 
 ![Screenshot of PickDiff](./images/pickdiff-screenshot.png)
 
@@ -13,6 +13,7 @@ Traditional `git diff` commands can be difficult to read and manage, especially 
 - Select start and end commits for comparison.
 - Browse and select specific files from the repository to diff.
 - View a color-coded, line-by-line diff for selected files.
+- Easily export the diff output to HTML or PDF (via browser functionality) for further analysis or input into LLMs.
 
 ## Setup and Installation
 
