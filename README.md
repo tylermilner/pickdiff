@@ -64,7 +64,7 @@ Once started, the application will be accessible in your web browser at `http://
 
 For development setup, project structure, running the dev server, cleaning builds, testing, and code quality guidelines, see:
 
-- CONTRIBUTING.md → Development Setup, Local Development, Project Structure, Testing, and Code Style
+- [`CONTRIBUTING.md`](./CONTRIBUTING.md) → Development Setup, Local Development, Project Structure, Testing, and Code Style
 
 ## Technologies Used
 
