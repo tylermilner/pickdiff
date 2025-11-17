@@ -53,7 +53,7 @@ Once started, the application will be accessible in your web browser at `http://
 ## Usage
 
 1.  Start the application using one of the methods above.
-2.  Open your web browser and navigate to `http://localhost:3000`.
+2.  Open your web browser and navigate to `http://localhost:3000` if it doesn't open automatically.
 3.  The repository path being used will be displayed at the top of the page.
 4.  Enter the **Start Commit** hash and **End Commit** hash in the respective input fields. These can be full commit hashes or any Git reference (e.g., `HEAD~1`, `main`, `develop`).
 5.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
@@ -62,49 +62,9 @@ Once started, the application will be accessible in your web browser at `http://
 
 ## Development
 
-For development with automatic server restarts on file changes, use:
+For development setup, project structure, running the dev server, cleaning builds, testing, and code quality guidelines, see:
 
-```bash
-npm run dev -- /path/to/your/repo
-```
-
-Clean the build directory:
-
-```bash
-npm run clean
-```
-
-The backend source code is located in the `src/` directory and is written in TypeScript. The compiled JavaScript output goes to the `dist/` directory. The frontend client script is now also authored in TypeScript and compiled into the `public/` directory.
-
-- **Backend source file**: `src/server.ts`
-- **Backend compiled file**: `dist/server.js`
-- **Backend type definitions**: `dist/server.d.ts`
-- **Frontend source file**: `frontend/script.ts`
-- **Frontend compiled file**: `public/script.js`
-
-When you run `npm start` or `npm run build`, both backend and frontend TypeScript are compiled. The generated `public/script.js` is ignored by git; make changes in `frontend/script.ts`.
-
-### Code Quality
-
-This project uses [Biome](https://biomejs.dev/) for linting and formatting JavaScript/TypeScript code. Biome provides fast, modern linting and formatting with zero configuration.
-
-Run the linter to check for issues:
-
-```bash
-npm run lint
-```
-
-Automatically fix linting and formatting issues:
-
-```bash
-npm run lint:fix
-```
-
-Format code:
-
-```bash
-npm run format
-```
+- CONTRIBUTING.md → Development Setup, Local Development, Project Structure, Testing, and Code Style
 
 ## Technologies Used
 
@@ -112,79 +72,17 @@ npm run format
 - **Git Integration:** `simple-git` library
 - **Frontend:** HTML, CSS (Bootstrap), TypeScript (compiled to JavaScript)
 
-## Testing
+## Community & Project Health
 
-This project includes comprehensive test coverage using Jest for unit and integration tests, and Playwright for end-to-end tests.
+| Resource | Purpose |
+| -------- | ------- |
+| [`CONTRIBUTING.md`](./CONTRIBUTING.md) | Guidelines for contributing (workflow, testing, style) |
+| [`CODE_OF_CONDUCT.md`](./CODE_OF_CONDUCT.md) | Standards for respectful, inclusive participation |
+| [`SECURITY.md`](./SECURITY.md) | How to privately report vulnerabilities |
+| [`SUPPORT.md`](./SUPPORT.md) | How to get help or ask questions |
+| [`CHANGELOG.md`](./CHANGELOG.md) | Version history & notable changes |
 
-- **Unit Tests** (`tests/unit/`): Test the backend API endpoints with mocked dependencies
-- **Integration Tests** (`tests/integration/`): Test the complete backend workflow using real server instances and actual git operations
-- **End-to-End Tests** (`tests/e2e/`): Test the complete application workflow using Playwright with real browser automation
-
-After installing the Playwright browsers (see below), you can run all the tests (unit + integration + e2e) by executing:
-
-```bash
-npm run test:all
-```
-
-### Unit and Integration Tests
-
-Run all unit and integration tests:
-
-```bash
-npm test
-```
-
-Run unit tests only:
-
-```bash
-npm run test:unit
-```
-
-Run integration tests only:
-
-```bash
-npm run test:integration
-```
-
-Run tests in watch mode (automatically re-run when files change):
-
-```bash
-npm run test:watch
-```
-
-Run tests with coverage report:
-
-```bash
-npm run test:coverage
-```
-
-### End-to-End Tests
-
-#### Setting up Playwright
-
-For end-to-end tests, you'll need to install Playwright browsers:
-
-```bash
-npx playwright install
-```
-
-#### Running End-to-End Tests
-
-After installing Playwright browsers, you can run the end-to-end tests:
-
-```bash
-npm run test:e2e
-```
-
-Run end-to-end tests with UI mode:
-
-```bash
-npm run test:e2e:ui
-```
-
-### CI/CD
-
-The project includes GitHub Actions workflows that run tests automatically on pull requests and pushes to the main branch. The workflow runs tests on multiple Node.js versions and generates coverage reports.
+Before opening issues or PRs, please review the Code of Conduct and contribution guidelines. Security-related concerns should always follow the private reporting process in `SECURITY.md` (avoid public issues for vulnerabilities).
 
 ## License
 

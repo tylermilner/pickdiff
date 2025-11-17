@@ -46,7 +46,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 1. **Fork the repository** and create your branch from `main`
 2. **Make your changes** following our [style guidelines](#style-guidelines)
 3. **Add tests** if you've added code that should be tested
-4. **Ensure the test suite passes** by running `npm test`
+4. **Ensure the test suite passes** by running `npm run test:all`
 5. **Run the linter** with `npm run lint:fix` to ensure code quality
 6. **Update documentation** if needed
 7. **Write a clear commit message** following our guidelines
@@ -77,24 +77,60 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 5. **Run tests** to verify everything works:
    ```bash
-   npm test
-   npm run test:e2e
+   npm run test:all
    ```
 
-6. **Start development server** with auto-reload:
+### Local Development
+
+- Run the dev server (watching for changes), optionally specifying a repository path:
    ```bash
-   npm run dev:watch
+   npm run dev:watch -- /path/to/your/repo
    ```
+
+- Clean the build directory:
+   ```bash
+   npm run clean
+   ```
+
+### Project Structure
+
+The project uses TypeScript for both backend and frontend.
+
+- Backend source: `src/server.ts`
+- Backend output: `dist/server.js`
+- Frontend source: `frontend/script.ts`
+- Frontend output: `public/script.js`
+
+Notes:
+- The `dist/` directory and `public/script.js` are generated artifacts; do not edit them directly.
+- Builds:
+   - `npm run build` compiles both backend and frontend
+   - `npm run build:backend` compiles backend only
+   - `npm run build:frontend` compiles frontend only
 
 ## Style Guidelines
 
 ### Code Style
 
 - This project uses **[Biome](https://biomejs.dev/)** for linting and formatting
-- Run `npm run lint:fix` before committing to auto-fix issues
 - Use **TypeScript** for all new code (both backend and frontend)
 - Use ES6 imports with `node:` prefix for Node.js built-ins (e.g., `node:path`)
 - Follow existing code patterns and conventions
+
+Run the linter to check for issues:
+```bash
+npm run lint
+```
+
+Automatically fix linting and formatting issues:
+```bash
+npm run lint:fix
+```
+
+Format code:
+```bash
+npm run format
+```
 
 ### Commit Messages
 
@@ -121,9 +157,14 @@ npm run test:integration
 ```
 
 ### End-to-End Tests
-Test the full application in a real browser:
+Test the full application in a real browser (make sure the Playwright browsers are installed first, see [Development Setup](#development-setup) above):
 ```bash
 npm run test:e2e
+```
+
+Run end-to-end tests with UI mode:
+```bash
+npm run test:e2e:ui
 ```
 
 ### All Tests
@@ -132,11 +173,22 @@ Run all test suites:
 npm run test:all
 ```
 
+### Watch Mode
+
+Run tests in watch mode (automatically re-run when files change):
+```bash
+npm run test:watch
+```
+
 ### Coverage
 Generate test coverage report:
 ```bash
 npm run test:coverage
 ```
+
+### CI/CD
+
+The project includes GitHub Actions workflows that run tests automatically on pull requests and pushes to the main branch. The workflow runs tests on multiple Node.js versions and generates coverage reports.
 
 ## Additional Resources
 
