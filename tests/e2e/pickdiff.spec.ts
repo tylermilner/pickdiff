@@ -113,9 +113,9 @@ test.describe("PickDiff Application", () => {
     );
 
     // Act
-    // Find and check a file checkbox
+    // Find and check a file checkbox (not a folder checkbox)
     const firstCheckbox = page
-      .locator('#file-tree input[type="checkbox"]')
+      .locator("#file-tree input.file-checkbox")
       .first();
     await expect(firstCheckbox).toBeVisible();
     await firstCheckbox.check();
@@ -153,7 +153,7 @@ test.describe("PickDiff Application", () => {
 
     // Select at least one file (required for form submission)
     const firstCheckbox = page
-      .locator('#file-tree input[type="checkbox"]')
+      .locator("#file-tree input.file-checkbox")
       .first();
     await firstCheckbox.check();
 
@@ -382,7 +382,7 @@ test.describe("PickDiff Application", () => {
 
     // Get all visible file checkboxes
     const fileCheckboxes = page.locator(
-      '#file-tree input[type="checkbox"]:visible',
+      "#file-tree input.file-checkbox:visible",
     );
     const totalCount = await fileCheckboxes.count();
 
@@ -419,7 +419,7 @@ test.describe("PickDiff Application", () => {
 
     // Verify some are checked
     const fileCheckboxes = page.locator(
-      '#file-tree input[type="checkbox"]:visible',
+      "#file-tree input.file-checkbox:visible",
     );
     const totalCount = await fileCheckboxes.count();
     await expect(fileCheckboxes.first()).toBeChecked();
@@ -448,7 +448,7 @@ test.describe("PickDiff Application", () => {
 
     const selectAllCheckbox = page.locator("#select-all");
     const fileCheckboxes = page.locator(
-      '#file-tree input[type="checkbox"]:visible',
+      "#file-tree input.file-checkbox:visible",
     );
     const totalCount = await fileCheckboxes.count();
 
@@ -490,7 +490,7 @@ test.describe("PickDiff Application", () => {
 
     // Get visible checkboxes after filtering
     const visibleCheckboxes = page.locator(
-      '#file-tree input[type="checkbox"]:visible',
+      "#file-tree input.file-checkbox:visible",
     );
     const visibleCount = await visibleCheckboxes.count();
     expect(visibleCount).toBeGreaterThan(0);
@@ -510,7 +510,7 @@ test.describe("PickDiff Application", () => {
 
     // Get all checkboxes
     const allCheckboxes = page.locator(
-      '#file-tree input[type="checkbox"]:visible',
+      "#file-tree input.file-checkbox:visible",
     );
     const allCount = await allCheckboxes.count();
 
@@ -525,5 +525,226 @@ test.describe("PickDiff Application", () => {
     // Not all files should be checked (only the .ts files)
     expect(checkedCount).toBeLessThan(allCount);
     expect(checkedCount).toBeGreaterThan(0);
+  });
+
+  test("should display folder checkboxes", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Assert
+    // Check that folder checkboxes exist
+    const folderCheckboxes = page.locator("#file-tree input.folder-checkbox");
+    const folderCount = await folderCheckboxes.count();
+
+    // Should have at least one folder (e.g., src, tests, frontend, etc.)
+    expect(folderCount).toBeGreaterThan(0);
+  });
+
+  test("should select all files in folder when folder checkbox is checked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Find a folder that has files (frontend folder has script.ts)
+    const frontendFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path="frontend"]',
+    );
+
+    // Verify the folder checkbox exists
+    await expect(frontendFolderCheckbox).toBeVisible();
+
+    // Get the file checkbox within the frontend folder before checking
+    const frontendFileCheckbox = page.locator(
+      'input.file-checkbox[value="frontend/script.ts"]',
+    );
+
+    // Initially, the file should not be checked
+    await expect(frontendFileCheckbox).not.toBeChecked();
+
+    // Act
+    // Check the folder checkbox
+    await frontendFolderCheckbox.check();
+
+    // Assert
+    // The file within the folder should now be checked
+    await expect(frontendFileCheckbox).toBeChecked();
+
+    // The folder checkbox should be fully checked
+    await expect(frontendFolderCheckbox).toBeChecked();
+  });
+
+  test("should deselect all files in folder when folder checkbox is unchecked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Find and check the frontend folder checkbox
+    const frontendFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path="frontend"]',
+    );
+    await frontendFolderCheckbox.check();
+
+    // Verify the file is checked
+    const frontendFileCheckbox = page.locator(
+      'input.file-checkbox[value="frontend/script.ts"]',
+    );
+    await expect(frontendFileCheckbox).toBeChecked();
+
+    // Act
+    // Uncheck the folder checkbox
+    await frontendFolderCheckbox.uncheck();
+
+    // Assert
+    // The file within the folder should now be unchecked
+    await expect(frontendFileCheckbox).not.toBeChecked();
+
+    // The folder checkbox should be unchecked
+    await expect(frontendFolderCheckbox).not.toBeChecked();
+  });
+
+  test("should update folder checkbox to indeterminate when some files are checked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Find the public folder which has multiple files (index.html, styles.css)
+    const publicFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path="public"]',
+    );
+
+    // Get one file checkbox within the public folder
+    const indexFileCheckbox = page.locator(
+      'input.file-checkbox[value="public/index.html"]',
+    );
+
+    // Initially, folder should not be checked
+    await expect(publicFolderCheckbox).not.toBeChecked();
+
+    // Act
+    // Check only one file in the folder
+    await indexFileCheckbox.check();
+
+    // Assert
+    // The folder checkbox should be indeterminate (not fully checked, but has some children checked)
+    // We can't directly test indeterminate state in Playwright, but we can check it's not fully checked
+    const isChecked = await publicFolderCheckbox.isChecked();
+    expect(isChecked).toBe(false); // Should be indeterminate, not fully checked
+
+    // But at least one file is checked
+    await expect(indexFileCheckbox).toBeChecked();
+  });
+
+  test("should update parent folder checkbox when nested folder is checked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Find nested folders (tests/e2e for example)
+    const testsFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path="tests"]',
+    );
+    const e2eFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path="tests/e2e"]',
+    );
+
+    // Verify both folder checkboxes exist
+    if (
+      (await testsFolderCheckbox.count()) > 0 &&
+      (await e2eFolderCheckbox.count()) > 0
+    ) {
+      // Initially, both should not be checked
+      await expect(testsFolderCheckbox).not.toBeChecked();
+      await expect(e2eFolderCheckbox).not.toBeChecked();
+
+      // Act
+      // Check the nested e2e folder
+      await e2eFolderCheckbox.check();
+
+      // Assert
+      // The nested e2e folder should be checked
+      await expect(e2eFolderCheckbox).toBeChecked();
+
+      // The parent tests folder should be indeterminate (not fully checked)
+      const isParentChecked = await testsFolderCheckbox.isChecked();
+      expect(isParentChecked).toBe(false); // Should be indeterminate
+    } else {
+      throw new Error("Folder structure does not match expected structure");
+    }
+  });
+
+  test("should select all files including nested folders when parent folder is checked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Find the .github folder which has both direct files and nested subfolders
+    const githubFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path=".github"]',
+    );
+
+    // Get all file checkboxes within the .github folder (including nested folders)
+    const githubFileCheckboxes = page.locator(
+      'input.file-checkbox[value^=".github/"]',
+    );
+
+    const fileCount = await githubFileCheckboxes.count();
+    expect(fileCount).toBeGreaterThan(0);
+
+    // Ensure all files are initially unchecked by unchecking the folder first
+    const isChecked = await githubFolderCheckbox.isChecked();
+    if (isChecked) {
+      await githubFolderCheckbox.uncheck();
+    }
+
+    // Act
+    // Click the folder checkbox to check it
+    await githubFolderCheckbox.click();
+
+    // Assert
+    // All files within the folder (including those in nested subfolders) should be checked
+    for (let i = 0; i < fileCount; i++) {
+      await expect(githubFileCheckboxes.nth(i)).toBeChecked();
+    }
   });
 });

@@ -90,10 +90,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     allItems.forEach((item) => {
-      const checkbox = item.querySelector('input[type="checkbox"]');
-      if (checkbox) {
+      const fileCheckbox = item.querySelector("input.file-checkbox");
+      if (fileCheckbox) {
         // This is a file item
-        const filePath = (checkbox as HTMLInputElement).value.toLowerCase();
+        const filePath = (fileCheckbox as HTMLInputElement).value.toLowerCase();
         if (filePath.includes(searchTerm)) {
           (item as HTMLElement).style.display = "";
           // Show all parent folders
@@ -224,17 +224,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     container.innerHTML = createTreeHtml(tree);
 
-    // Add event listeners to all checkboxes to update select all state
-    const checkboxes = container.querySelectorAll<HTMLInputElement>(
-      'input[type="checkbox"]',
+    // Add event listeners to file checkboxes to update select all state and folder states
+    const fileCheckboxes = container.querySelectorAll<HTMLInputElement>(
+      "input.file-checkbox",
     );
-    checkboxes.forEach((checkbox) => {
+    fileCheckboxes.forEach((checkbox) => {
       checkbox.addEventListener("change", () => {
+        updateFolderCheckboxStates();
         updateSelectAllState();
       });
     });
 
-    // Initialize select all state
+    // Add event listeners to folder checkboxes to select/deselect all files in folder
+    const folderCheckboxes = container.querySelectorAll<HTMLInputElement>(
+      "input.folder-checkbox",
+    );
+    folderCheckboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        handleFolderCheckboxChange(checkbox);
+      });
+    });
+
+    // Initialize folder checkbox states and select all state
+    updateFolderCheckboxStates();
     updateSelectAllState();
   }
 
@@ -244,9 +256,9 @@ document.addEventListener("DOMContentLoaded", () => {
       if (!Object.keys(tree).includes(key)) continue;
       const newPath = path ? `${path}/${key}` : key;
       if (tree[key].isFile) {
-        html += `<li><input type="checkbox" value="${escapeHtml(newPath)}" class="mr-2">${escapeHtml(key)}</li>`;
+        html += `<li><input type="checkbox" value="${escapeHtml(newPath)}" class="file-checkbox mr-2">${escapeHtml(key)}</li>`;
       } else {
-        html += `<li><strong>${escapeHtml(key)}</strong>${createTreeHtml(tree[key], newPath)}</li>`;
+        html += `<li><input type="checkbox" class="folder-checkbox mr-2" data-folder-path="${escapeHtml(newPath)}"><strong>${escapeHtml(key)}</strong>${createTreeHtml(tree[key], newPath)}</li>`;
       }
     }
     html += "</ul>";
@@ -255,14 +267,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function getSelectedFiles(): string[] {
     const checkboxes = document.querySelectorAll<HTMLInputElement>(
-      '#file-tree input[type="checkbox"]:checked',
+      "#file-tree input.file-checkbox:checked",
     );
     return Array.from(checkboxes).map((checkbox) => checkbox.value);
   }
 
   function getVisibleFileCheckboxes(): HTMLInputElement[] {
     const checkboxes = document.querySelectorAll<HTMLInputElement>(
-      '#file-tree input[type="checkbox"]',
+      "#file-tree input.file-checkbox",
     );
     return Array.from(checkboxes).filter((checkbox) => {
       const listItem = checkbox.closest("li");
@@ -296,6 +308,125 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  function handleFolderCheckboxChange(folderCheckbox: HTMLInputElement): void {
+    const folderPath = folderCheckbox.getAttribute("data-folder-path");
+    if (!folderPath) return;
+
+    const isChecked = folderCheckbox.checked;
+
+    // Find the parent <li> element
+    const folderListItem = folderCheckbox.closest("li");
+    if (!folderListItem) return;
+
+    // Get all file checkboxes within this folder (direct and nested)
+    const fileCheckboxes = folderListItem.querySelectorAll<HTMLInputElement>(
+      "input.file-checkbox",
+    );
+
+    // Update all file checkboxes within this folder
+    fileCheckboxes.forEach((checkbox) => {
+      checkbox.checked = isChecked;
+    });
+
+    // Update folder checkbox states (this will also update nested folders)
+    updateFolderCheckboxStates();
+    updateSelectAllState();
+  }
+
+  function updateFolderCheckboxStates(): void {
+    // Get all folder checkboxes, process from deepest to shallowest
+    const folderCheckboxes = Array.from(
+      document.querySelectorAll<HTMLInputElement>("input.folder-checkbox"),
+    );
+
+    // Sort by depth (deepest first) to ensure child folders are processed before parents
+    folderCheckboxes.sort((a, b) => {
+      const depthA = (a.getAttribute("data-folder-path") || "").split(
+        "/",
+      ).length;
+      const depthB = (b.getAttribute("data-folder-path") || "").split(
+        "/",
+      ).length;
+      return depthB - depthA;
+    });
+
+    folderCheckboxes.forEach((folderCheckbox) => {
+      const folderListItem = folderCheckbox.closest("li");
+      if (!folderListItem) return;
+
+      // Get all file checkboxes within this folder
+      const fileCheckboxes = folderListItem.querySelectorAll<HTMLInputElement>(
+        "input.file-checkbox",
+      );
+
+      // If no files in this folder, check for nested folders
+      if (fileCheckboxes.length === 0) {
+        // This folder only has subfolders, check the subfolders' states
+        const subfolderCheckboxes = Array.from(
+          folderListItem.querySelectorAll<HTMLInputElement>(
+            "input.folder-checkbox",
+          ),
+        ).filter((cb) => cb !== folderCheckbox);
+
+        if (subfolderCheckboxes.length === 0) {
+          // Empty folder
+          folderCheckbox.checked = false;
+          folderCheckbox.indeterminate = false;
+          return;
+        }
+
+        const allSubfoldersChecked = subfolderCheckboxes.every(
+          (cb) => cb.checked && !cb.indeterminate,
+        );
+        const someSubfoldersChecked = subfolderCheckboxes.some(
+          (cb) => cb.checked || cb.indeterminate,
+        );
+
+        if (allSubfoldersChecked) {
+          folderCheckbox.checked = true;
+          folderCheckbox.indeterminate = false;
+        } else if (someSubfoldersChecked) {
+          folderCheckbox.checked = false;
+          folderCheckbox.indeterminate = true;
+        } else {
+          folderCheckbox.checked = false;
+          folderCheckbox.indeterminate = false;
+        }
+        return;
+      }
+
+      // Count checked files
+      const checkedCount = Array.from(fileCheckboxes).filter(
+        (cb) => cb.checked,
+      ).length;
+
+      // Also check if there are any subfolders with checked/indeterminate states
+      const subfolderCheckboxes = Array.from(
+        folderListItem.querySelectorAll<HTMLInputElement>(
+          "input.folder-checkbox",
+        ),
+      ).filter((cb) => cb !== folderCheckbox);
+
+      const someSubfoldersChecked = subfolderCheckboxes.some(
+        (cb) => cb.checked || cb.indeterminate,
+      );
+
+      if (checkedCount === 0 && !someSubfoldersChecked) {
+        folderCheckbox.checked = false;
+        folderCheckbox.indeterminate = false;
+      } else if (
+        checkedCount === fileCheckboxes.length &&
+        !someSubfoldersChecked
+      ) {
+        folderCheckbox.checked = true;
+        folderCheckbox.indeterminate = false;
+      } else {
+        folderCheckbox.checked = false;
+        folderCheckbox.indeterminate = true;
+      }
+    });
+  }
+
   function displayDiffs(diffs: DiffResponse): void {
     if (diffSummary) diffSummary.innerHTML = "";
     for (const file in diffs) {
@@ -323,13 +454,15 @@ document.addEventListener("DOMContentLoaded", () => {
     // This is a simple delay, a more robust solution might use MutationObserver
     setTimeout(() => {
       const checkboxes = document.querySelectorAll<HTMLInputElement>(
-        '#file-tree input[type="checkbox"]',
+        "#file-tree input.file-checkbox",
       );
       checkboxes.forEach((checkbox) => {
         if (filesToSelect.includes(checkbox.value)) {
           checkbox.checked = true;
         }
       });
+      // Update folder checkbox states after applying saved selections
+      updateFolderCheckboxStates();
     }, 100); // Small delay to ensure elements are rendered
   }
 
