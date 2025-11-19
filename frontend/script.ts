@@ -25,6 +25,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const endCommitInput = document.getElementById(
     "end-commit",
   ) as HTMLInputElement | null;
+  const fileSearchInput = document.getElementById(
+    "file-search",
+  ) as HTMLInputElement | null;
 
   if (
     !repoPathSpan ||
@@ -32,7 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
     !diffForm ||
     !diffSummary ||
     !startCommitInput ||
-    !endCommitInput
+    !endCommitInput ||
+    !fileSearchInput
   ) {
     console.error("Missing required DOM elements.");
     return;
@@ -52,6 +56,50 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error fetching repository path:", error);
       repoPathSpan.textContent = "Could not load repository path.";
     });
+
+  // Add search functionality
+  fileSearchInput.addEventListener("input", () => {
+    filterFileTree(fileSearchInput.value.toLowerCase());
+  });
+
+  function filterFileTree(searchTerm: string): void {
+    if (!fileTree) return;
+
+    const allItems = fileTree.querySelectorAll("li");
+
+    if (!searchTerm) {
+      // Show all items if search is empty
+      allItems.forEach((item) => {
+        (item as HTMLElement).style.display = "";
+      });
+      return;
+    }
+
+    allItems.forEach((item) => {
+      const checkbox = item.querySelector('input[type="checkbox"]');
+      if (checkbox) {
+        // This is a file item
+        const filePath = (checkbox as HTMLInputElement).value.toLowerCase();
+        if (filePath.includes(searchTerm)) {
+          (item as HTMLElement).style.display = "";
+          // Show all parent folders
+          let parent = item.parentElement;
+          while (parent && parent !== fileTree) {
+            if (parent.tagName === "LI") {
+              (parent as HTMLElement).style.display = "";
+            }
+            parent = parent.parentElement;
+          }
+        } else {
+          (item as HTMLElement).style.display = "none";
+        }
+      } else {
+        // This is a folder item - initially hide it
+        // It will be shown if any of its children match
+        (item as HTMLElement).style.display = "none";
+      }
+    });
+  }
 
   function loadSavedData(): void {
     const savedStartCommit =

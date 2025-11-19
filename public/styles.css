@@ -1,3 +1,7 @@
+#file-search {
+  max-width: 100%;
+}
+
 #file-tree {
   height: 300px;
   overflow-y: auto;
