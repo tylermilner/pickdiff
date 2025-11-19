@@ -354,4 +354,176 @@ test.describe("PickDiff Application", () => {
       throw new Error("server.ts file not found");
     }
   });
+
+  test("should display select all checkbox", async ({ page }) => {
+    // Act
+    await page.goto("/");
+
+    // Assert
+    const selectAllCheckbox = page.locator("#select-all");
+    await expect(selectAllCheckbox).toBeVisible();
+
+    // Check that the label is correct
+    const label = page.locator('label[for="select-all"]');
+    await expect(label).toHaveText("Select All");
+  });
+
+  test("should select all visible files when select all is checked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get all visible file checkboxes
+    const fileCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const totalCount = await fileCheckboxes.count();
+
+    // Ensure we have checkboxes to test with
+    expect(totalCount).toBeGreaterThan(0);
+
+    // Act
+    const selectAllCheckbox = page.locator("#select-all");
+    await selectAllCheckbox.check();
+
+    // Assert
+    // All visible file checkboxes should be checked
+    for (let i = 0; i < totalCount; i++) {
+      await expect(fileCheckboxes.nth(i)).toBeChecked();
+    }
+  });
+
+  test("should deselect all files when select all is unchecked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    const selectAllCheckbox = page.locator("#select-all");
+
+    // First select all
+    await selectAllCheckbox.check();
+
+    // Verify some are checked
+    const fileCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const totalCount = await fileCheckboxes.count();
+    await expect(fileCheckboxes.first()).toBeChecked();
+
+    // Act
+    await selectAllCheckbox.uncheck();
+
+    // Assert
+    // All file checkboxes should be unchecked
+    for (let i = 0; i < totalCount; i++) {
+      await expect(fileCheckboxes.nth(i)).not.toBeChecked();
+    }
+  });
+
+  test("should update select all checkbox state when individual files are checked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    const selectAllCheckbox = page.locator("#select-all");
+    const fileCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const totalCount = await fileCheckboxes.count();
+
+    // Ensure we have at least 2 files to test with
+    expect(totalCount).toBeGreaterThan(1);
+
+    // Act & Assert
+    // Initially, select all should be unchecked
+    await expect(selectAllCheckbox).not.toBeChecked();
+
+    // Check first file - select all should become indeterminate
+    const firstCheckbox = fileCheckboxes.first();
+    await firstCheckbox.check();
+
+    // Check if indeterminate (we can't directly check indeterminate state in Playwright easily,
+    // but we can verify it's not fully checked)
+    const isChecked = await selectAllCheckbox.isChecked();
+    expect(isChecked).toBe(false); // Should be indeterminate, not fully checked
+
+    // Check all files manually
+    await selectAllCheckbox.check();
+
+    // Now select all should be fully checked
+    await expect(selectAllCheckbox).toBeChecked();
+  });
+
+  test("should only affect visible files when filtered", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Filter to show only .ts files
+    await page.fill("#file-search", ".ts");
+
+    // Get visible checkboxes after filtering
+    const visibleCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const visibleCount = await visibleCheckboxes.count();
+    expect(visibleCount).toBeGreaterThan(0);
+
+    // Act
+    const selectAllCheckbox = page.locator("#select-all");
+    await selectAllCheckbox.check();
+
+    // Assert
+    // All visible (filtered) checkboxes should be checked
+    for (let i = 0; i < visibleCount; i++) {
+      await expect(visibleCheckboxes.nth(i)).toBeChecked();
+    }
+
+    // Clear the filter
+    await page.fill("#file-search", "");
+
+    // Get all checkboxes
+    const allCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const allCount = await allCheckboxes.count();
+
+    // Count how many are checked
+    let checkedCount = 0;
+    for (let i = 0; i < allCount; i++) {
+      if (await allCheckboxes.nth(i).isChecked()) {
+        checkedCount++;
+      }
+    }
+
+    // Not all files should be checked (only the .ts files)
+    expect(checkedCount).toBeLessThan(allCount);
+    expect(checkedCount).toBeGreaterThan(0);
+  });
 });

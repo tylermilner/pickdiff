@@ -28,6 +28,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const fileSearchInput = document.getElementById(
     "file-search",
   ) as HTMLInputElement | null;
+  const selectAllCheckbox = document.getElementById(
+    "select-all",
+  ) as HTMLInputElement | null;
 
   if (
     !repoPathSpan ||
@@ -36,7 +39,8 @@ document.addEventListener("DOMContentLoaded", () => {
     !diffSummary ||
     !startCommitInput ||
     !endCommitInput ||
-    !fileSearchInput
+    !fileSearchInput ||
+    !selectAllCheckbox
   ) {
     console.error("Missing required DOM elements.");
     return;
@@ -60,6 +64,16 @@ document.addEventListener("DOMContentLoaded", () => {
   // Add search functionality
   fileSearchInput.addEventListener("input", () => {
     filterFileTree(fileSearchInput.value.toLowerCase());
+    updateSelectAllState();
+  });
+
+  // Add select all functionality
+  selectAllCheckbox.addEventListener("change", () => {
+    const isChecked = selectAllCheckbox.checked;
+    const checkboxes = getVisibleFileCheckboxes();
+    checkboxes.forEach((checkbox) => {
+      checkbox.checked = isChecked;
+    });
   });
 
   function filterFileTree(searchTerm: string): void {
@@ -209,6 +223,19 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     container.innerHTML = createTreeHtml(tree);
+
+    // Add event listeners to all checkboxes to update select all state
+    const checkboxes = container.querySelectorAll<HTMLInputElement>(
+      'input[type="checkbox"]',
+    );
+    checkboxes.forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        updateSelectAllState();
+      });
+    });
+
+    // Initialize select all state
+    updateSelectAllState();
   }
 
   function createTreeHtml(tree: FileTreeNode, path: string = ""): string {
@@ -231,6 +258,42 @@ document.addEventListener("DOMContentLoaded", () => {
       '#file-tree input[type="checkbox"]:checked',
     );
     return Array.from(checkboxes).map((checkbox) => checkbox.value);
+  }
+
+  function getVisibleFileCheckboxes(): HTMLInputElement[] {
+    const checkboxes = document.querySelectorAll<HTMLInputElement>(
+      '#file-tree input[type="checkbox"]',
+    );
+    return Array.from(checkboxes).filter((checkbox) => {
+      const listItem = checkbox.closest("li");
+      return listItem && (listItem as HTMLElement).style.display !== "none";
+    });
+  }
+
+  function updateSelectAllState(): void {
+    if (!selectAllCheckbox) return;
+
+    const visibleCheckboxes = getVisibleFileCheckboxes();
+    if (visibleCheckboxes.length === 0) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+      return;
+    }
+
+    const checkedCount = visibleCheckboxes.filter(
+      (checkbox) => checkbox.checked,
+    ).length;
+
+    if (checkedCount === 0) {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = false;
+    } else if (checkedCount === visibleCheckboxes.length) {
+      selectAllCheckbox.checked = true;
+      selectAllCheckbox.indeterminate = false;
+    } else {
+      selectAllCheckbox.checked = false;
+      selectAllCheckbox.indeterminate = true;
+    }
   }
 
   function displayDiffs(diffs: DiffResponse): void {
