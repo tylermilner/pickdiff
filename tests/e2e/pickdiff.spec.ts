@@ -292,7 +292,9 @@ test.describe("PickDiff Application", () => {
     if (jsonFileCount > 0) {
       await expect(jsonFiles.first()).toBeVisible();
     } else {
-      throw new Error(".json files not found - update test to find some files from partial match");
+      throw new Error(
+        ".json files not found - update test to find some files from partial match",
+      );
     }
   });
 
