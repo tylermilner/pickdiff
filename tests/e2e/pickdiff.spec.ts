@@ -934,21 +934,34 @@ test.describe("PickDiff Application", () => {
     await expect(frontendToggle).toBeVisible();
     await expect(srcToggle).toBeVisible();
 
+    // Verify both are expanded at the start
+    const frontendFolderItem = page.locator(".folder-item").filter({
+      has: frontendToggle,
+    });
+    const srcFolderItem = page.locator(".folder-item").filter({
+      has: srcToggle,
+    });
+
+    // Both folder items should not have the collapsed class initially
+    const frontendIsCollapsedInitially = await frontendFolderItem.evaluate(
+      (el) => el.classList.contains("collapsed"),
+    );
+    const srcIsCollapsedInitially = await srcFolderItem.evaluate((el) =>
+      el.classList.contains("collapsed"),
+    );
+
+    expect(frontendIsCollapsedInitially).toBe(false);
+    expect(srcIsCollapsedInitially).toBe(false);
+
     // Act
     // Collapse only the frontend folder
     await frontendToggle.click();
 
     // Assert
     // Frontend should be collapsed
-    const frontendFolderItem = page.locator(".folder-item").filter({
-      has: frontendToggle,
-    });
     await expect(frontendFolderItem).toHaveClass(/collapsed/);
 
     // Src should still be expanded
-    const srcFolderItem = page.locator(".folder-item").filter({
-      has: srcToggle,
-    });
     const srcHasCollapsedClass = await srcFolderItem.evaluate((el) =>
       el.classList.contains("collapsed"),
     );
