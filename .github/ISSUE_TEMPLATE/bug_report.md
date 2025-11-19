@@ -1,8 +1,10 @@
 ---
 name: Bug Report
-description: File a bug report to help us improve
-labels: [bug]
-assignees: []
+about: Report a bug or problem with the software
+title: ''
+labels: bug
+assignees: ''
+
 ---
 
 ## Description
