@@ -96,11 +96,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const filePath = (fileCheckbox as HTMLInputElement).value.toLowerCase();
         if (filePath.includes(searchTerm)) {
           (item as HTMLElement).style.display = "";
-          // Show all parent folders
+          // Show all parent folders and expand them
           let parent = item.parentElement;
           while (parent && parent !== fileTree) {
             if (parent.tagName === "LI") {
               (parent as HTMLElement).style.display = "";
+              // Auto-expand parent folders when searching
+              if (parent.classList.contains("folder-item")) {
+                parent.classList.remove("collapsed");
+                const nestedList =
+                  parent.querySelector<HTMLElement>(":scope > ul");
+                const toggle =
+                  parent.querySelector<HTMLElement>(".folder-toggle");
+                if (nestedList) nestedList.style.display = "";
+                if (toggle) toggle.textContent = "▼";
+              }
             }
             parent = parent.parentElement;
           }
@@ -164,6 +174,29 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
+  function handleFolderToggle(toggleElement: HTMLElement): void {
+    const folderItem = toggleElement.closest(".folder-item");
+    if (!folderItem) return;
+
+    const nestedList = folderItem.querySelector<HTMLElement>(":scope > ul");
+    if (!nestedList) return;
+
+    // Toggle the collapsed state
+    const isCollapsed = folderItem.classList.contains("collapsed");
+
+    if (isCollapsed) {
+      // Expand the folder
+      folderItem.classList.remove("collapsed");
+      nestedList.style.display = "";
+      toggleElement.textContent = "▼";
+    } else {
+      // Collapse the folder
+      folderItem.classList.add("collapsed");
+      nestedList.style.display = "none";
+      toggleElement.textContent = "▶";
+    }
+  }
+
   diffForm.addEventListener("submit", async (event: Event) => {
     event.preventDefault();
 
@@ -224,6 +257,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     container.innerHTML = createTreeHtml(tree);
 
+    // Add event listeners to folder toggle icons
+    const folderToggles =
+      container.querySelectorAll<HTMLElement>(".folder-toggle");
+    folderToggles.forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        handleFolderToggle(toggle);
+      });
+    });
+
     // Add event listeners to file checkboxes to update select all state and folder states
     const fileCheckboxes = container.querySelectorAll<HTMLInputElement>(
       "input.file-checkbox",
@@ -258,7 +300,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (tree[key].isFile) {
         html += `<li><input type="checkbox" value="${escapeHtml(newPath)}" class="file-checkbox mr-2">${escapeHtml(key)}</li>`;
       } else {
-        html += `<li><input type="checkbox" class="folder-checkbox mr-2" data-folder-path="${escapeHtml(newPath)}"><strong>${escapeHtml(key)}</strong>${createTreeHtml(tree[key], newPath)}</li>`;
+        html += `<li class="folder-item">
+          <span class="folder-toggle" data-folder-path="${escapeHtml(newPath)}">▼</span>
+          <input type="checkbox" class="folder-checkbox mr-2" data-folder-path="${escapeHtml(newPath)}">
+          <strong>${escapeHtml(key)}</strong>
+          ${createTreeHtml(tree[key], newPath)}
+        </li>`;
       }
     }
     html += "</ul>";
