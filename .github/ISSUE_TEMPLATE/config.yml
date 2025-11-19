@@ -1,5 +1,1 @@
 blank_issues_enabled: false
-contact_links:
-  - name: Security Issues
-    url: https://github.com/tylermilner/pickdiff/blob/main/SECURITY.md
-    about: Please report security vulnerabilities privately following SECURITY.md.
