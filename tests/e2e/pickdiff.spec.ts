@@ -718,27 +718,33 @@ test.describe("PickDiff Application", () => {
         response.url().includes("/api/files") && response.status() === 200,
     );
 
-    // Find the public folder
-    const publicFolderCheckbox = page.locator(
-      'input.folder-checkbox[data-folder-path="public"]',
+    // Find the .github folder which has both direct files and nested subfolders
+    const githubFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path=".github"]',
     );
 
-    // Get all file checkboxes within the public folder
-    const publicFileCheckboxes = page.locator(
-      'input.file-checkbox[value^="public/"]',
+    // Get all file checkboxes within the .github folder (including nested folders)
+    const githubFileCheckboxes = page.locator(
+      'input.file-checkbox[value^=".github/"]',
     );
 
-    const fileCount = await publicFileCheckboxes.count();
+    const fileCount = await githubFileCheckboxes.count();
     expect(fileCount).toBeGreaterThan(0);
 
+    // Ensure all files are initially unchecked by unchecking the folder first
+    const isChecked = await githubFolderCheckbox.isChecked();
+    if (isChecked) {
+      await githubFolderCheckbox.uncheck();
+    }
+
     // Act
-    // Check the folder checkbox
-    await publicFolderCheckbox.check();
+    // Click the folder checkbox to check it
+    await githubFolderCheckbox.click();
 
     // Assert
-    // All files within the folder should be checked
+    // All files within the folder (including those in nested subfolders) should be checked
     for (let i = 0; i < fileCount; i++) {
-      await expect(publicFileCheckboxes.nth(i)).toBeChecked();
+      await expect(githubFileCheckboxes.nth(i)).toBeChecked();
     }
   });
 });
