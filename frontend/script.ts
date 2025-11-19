@@ -82,9 +82,21 @@ document.addEventListener("DOMContentLoaded", () => {
     const allItems = fileTree.querySelectorAll("li");
 
     if (!searchTerm) {
-      // Show all items if search is empty
+      // Show all items if search is empty, but respect collapsed state
       allItems.forEach((item) => {
-        (item as HTMLElement).style.display = "";
+        const htmlItem = item as HTMLElement;
+        htmlItem.style.display = "";
+
+        // If this is a collapsed folder, re-hide its nested content
+        if (
+          htmlItem.classList.contains("folder-item") &&
+          htmlItem.classList.contains("collapsed")
+        ) {
+          const nestedList = htmlItem.querySelector<HTMLElement>(":scope > ul");
+          if (nestedList) {
+            nestedList.style.display = "none";
+          }
+        }
       });
       return;
     }

@@ -1007,4 +1007,56 @@ test.describe("PickDiff Application", () => {
     );
     await expect(frontendFile).toBeChecked();
   });
+
+  test("should preserve collapsed state when clearing search", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Collapse the frontend folder
+    const frontendToggle = page.locator(
+      '.folder-toggle[data-folder-path="frontend"]',
+    );
+    await frontendToggle.click();
+
+    // Collapse the src folder
+    const srcToggle = page.locator('.folder-toggle[data-folder-path="src"]');
+    await srcToggle.click();
+
+    // Verify folders are collapsed
+    const frontendFolderItem = page.locator(".folder-item").filter({
+      has: frontendToggle,
+    });
+    const srcFolderItem = page.locator(".folder-item").filter({
+      has: srcToggle,
+    });
+
+    await expect(frontendFolderItem).toHaveClass(/collapsed/);
+    await expect(srcFolderItem).toHaveClass(/collapsed/);
+
+    // Act
+    // Search for a file
+    await page.fill("#file-search", "package.json");
+
+    // Clear the search
+    await page.fill("#file-search", "");
+
+    // Assert
+    // The folders should still be collapsed
+    await expect(frontendFolderItem).toHaveClass(/collapsed/);
+    await expect(srcFolderItem).toHaveClass(/collapsed/);
+
+    // Files within collapsed folders should not be visible
+    const frontendFile = page.locator(
+      'input.file-checkbox[value="frontend/script.ts"]',
+    );
+    await expect(frontendFile).not.toBeVisible();
+  });
 });
