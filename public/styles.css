@@ -7,6 +7,19 @@
   overflow-y: auto;
 }
 
+#file-tree .folder-checkbox {
+  margin-right: 5px;
+}
+
+#file-tree .file-checkbox {
+  margin-right: 5px;
+  margin-left: 0;
+}
+
+#file-tree ul {
+  margin-left: 20px;
+}
+
 .diff-container {
   margin-bottom: 20px;
 }
