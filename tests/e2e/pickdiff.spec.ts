@@ -702,8 +702,7 @@ test.describe("PickDiff Application", () => {
       const isParentChecked = await testsFolderCheckbox.isChecked();
       expect(isParentChecked).toBe(false); // Should be indeterminate
     } else {
-      // Skip this test if the folder structure doesn't match
-      test.skip();
+      throw new Error("Folder structure does not match expected structure");
     }
   });
 
