@@ -172,4 +172,184 @@ test.describe("PickDiff Application", () => {
     await expect(page.locator("#start-commit")).toHaveValue(startCommit);
     await expect(page.locator("#end-commit")).toHaveValue(endCommit);
   });
+
+  test("should display search input for filtering files", async ({ page }) => {
+    // Act
+    await page.goto("/");
+
+    // Assert
+    // Check that search input exists
+    const searchInput = page.locator("#file-search");
+    await expect(searchInput).toBeVisible();
+    await expect(searchInput).toHaveAttribute("placeholder", "Search files...");
+  });
+
+  test("should filter files when typing in search input", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Act
+    // Search for a specific file that should exist (package.json)
+    await page.fill("#file-search", "package.json");
+
+    // Assert
+    // Should contain package.json if it exists
+    const packageJsonCheckbox = page.locator(
+      '#file-tree input[value*="package.json"]',
+    );
+    if ((await packageJsonCheckbox.count()) > 0) {
+      await expect(packageJsonCheckbox).toBeVisible();
+    } else {
+      throw new Error("package.json checkbox not found");
+    }
+  });
+
+  test("should show all files when search is cleared", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get initial count
+    const initialCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const initialCount = await initialCheckboxes.count();
+    expect(initialCount).toBeGreaterThan(0);
+
+    // Search for something specific
+    await page.fill("#file-search", "package.json");
+
+    // Act
+    // Clear the search
+    await page.fill("#file-search", "");
+
+    // Assert
+    // Should show all files again
+    const finalCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const finalCount = await finalCheckboxes.count();
+    expect(finalCount).toBe(initialCount);
+  });
+
+  test("should filter files case-insensitively", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Act
+    // Search with uppercase
+    await page.fill("#file-search", "PACKAGE.JSON");
+
+    // Assert
+    // Should still find package.json (case-insensitive)
+    const packageJsonCheckbox = page.locator(
+      '#file-tree input[value*="package.json"]',
+    );
+    if ((await packageJsonCheckbox.count()) > 0) {
+      await expect(packageJsonCheckbox).toBeVisible();
+    } else {
+      throw new Error("package.json checkbox not found");
+    }
+  });
+
+  test("should filter files with partial matches", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Act
+    // Search with partial match
+    await page.fill("#file-search", ".json");
+
+    // Assert
+    // Should show files ending with .json
+    const jsonFiles = page.locator('#file-tree input[value*=".json"]:visible');
+    const jsonFileCount = await jsonFiles.count();
+
+    // Should show at least package.json if it exists
+    if (jsonFileCount > 0) {
+      await expect(jsonFiles.first()).toBeVisible();
+    } else {
+      throw new Error(".json files not found - update test to find some files from partial match");
+    }
+  });
+
+  test("should hide non-matching files", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Act
+    // Search for a very specific term that shouldn't match many files
+    await page.fill("#file-search", "nonexistentfile12345");
+
+    // Assert
+    // Should hide most or all files
+    const visibleCheckboxes = page.locator(
+      '#file-tree input[type="checkbox"]:visible',
+    );
+    const visibleCount = await visibleCheckboxes.count();
+    expect(visibleCount).toBe(0);
+  });
+
+  test("should show parent folders when child files match", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Act
+    // Search for a file in a subdirectory (like src/server.ts)
+    await page.fill("#file-search", "server.ts");
+
+    // Assert
+    // The src folder should be visible (if server.ts exists in src/)
+    const srcFolder = page.locator('#file-tree strong:has-text("src")');
+    if ((await srcFolder.count()) > 0) {
+      await expect(srcFolder).toBeVisible();
+    } else {
+      throw new Error("src folder not found");
+    }
+
+    // The server.ts file should be visible
+    const serverTsFile = page.locator('#file-tree input[value*="server.ts"]');
+    if ((await serverTsFile.count()) > 0) {
+      await expect(serverTsFile).toBeVisible();
+    } else {
+      throw new Error("server.ts file not found");
+    }
+  });
 });
