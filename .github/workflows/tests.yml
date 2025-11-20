@@ -62,9 +62,8 @@ jobs:
       uses: codecov/codecov-action@v5
       if: matrix.node-version == '20.x'
       with:
-        file: ./coverage/lcov.info
         flags: tests
-        name: codecov-umbrella
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   e2e-tests:
     runs-on: ubuntu-latest
