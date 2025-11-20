@@ -38,6 +38,14 @@ function createApp(git: SimpleGit, repoPath: string): Express {
     try {
       const diffs: Record<string, string> = {};
       for (const file of files) {
+        // Check if file exists in the end commit
+        try {
+          await git.raw(["cat-file", "-e", `${endCommit}:${file}`]);
+        } catch {
+          // File doesn't exist in end commit, skip it
+          continue;
+        }
+
         let diff: string = await git.diff([
           `${startCommit}..${endCommit}`,
           "--",

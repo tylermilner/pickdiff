@@ -270,5 +270,68 @@ describe("PickDiff Server API", () => {
       // Assert
       expect(response.body).toHaveProperty("error", "Failed to get diffs");
     });
+
+    it("should skip files that don't exist in end commit", async () => {
+      // Arrange
+      // Mock git.raw for cat-file checks
+      mockGit.raw.mockImplementation((...args: unknown[]) => {
+        const argsArray = args.flat();
+        if (
+          argsArray.includes("cat-file") &&
+          argsArray.includes("def456:file1.js")
+        ) {
+          return Promise.resolve(""); // File exists in end commit
+        }
+        if (
+          argsArray.includes("cat-file") &&
+          argsArray.includes("def456:file2.js")
+        ) {
+          // File doesn't exist in end commit
+          return Promise.reject(
+            new Error("path 'file2.js' does not exist in 'def456'"),
+          );
+        }
+        return Promise.resolve("");
+      });
+
+      mockGit.diff.mockResolvedValue("-old line\n+new line");
+
+      // Act
+      const response = await request(app)
+        .post("/api/diff")
+        .send({
+          startCommit: "abc123",
+          endCommit: "def456",
+          files: ["file1.js", "file2.js"],
+        })
+        .expect("Content-Type", /json/)
+        .expect(200);
+
+      // Assert
+      // Only file1.js should be in the response, file2.js should be skipped
+      expect(response.body["file1.js"]).toBe("-old line\n+new line");
+      expect(response.body["file2.js"]).toBeUndefined();
+      expect(Object.keys(response.body)).toHaveLength(1);
+    });
+
+    it("should return empty object when all files don't exist in end commit", async () => {
+      // Arrange
+      mockGit.raw.mockRejectedValue(new Error("path does not exist in commit"));
+
+      // Act
+      const response = await request(app)
+        .post("/api/diff")
+        .send({
+          startCommit: "abc123",
+          endCommit: "def456",
+          files: ["nonexistent1.js", "nonexistent2.js"],
+        })
+        .expect("Content-Type", /json/)
+        .expect(200);
+
+      // Assert
+      expect(response.body).toEqual({});
+      expect(Object.keys(response.body)).toHaveLength(0);
+    });
   });
 });
