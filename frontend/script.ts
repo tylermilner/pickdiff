@@ -2,7 +2,8 @@ interface RepoPathResponse {
   path: string;
 }
 interface DiffResponse {
-  [file: string]: string;
+  diffs: { [file: string]: string };
+  excludedFiles: string[];
 }
 
 type FileTreeNode = { [name: string]: FileTreeNode } & { isFile?: boolean };
@@ -299,7 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const diffs: DiffResponse = await response.json();
-      displayDiffs(diffs);
+      displayDiffs(diffs.diffs, diffs.excludedFiles);
 
       // Save data after successful diff generation
       localStorage.setItem(`startCommit_${repoPath}`, startCommit);
@@ -554,8 +555,25 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function displayDiffs(diffs: DiffResponse): void {
+  function displayDiffs(
+    diffs: { [file: string]: string },
+    excludedFiles: string[],
+  ): void {
     if (diffSummary) diffSummary.innerHTML = "";
+
+    // Display warning if files were excluded
+    if (excludedFiles.length > 0) {
+      const warningDiv = document.createElement("div");
+      warningDiv.className = "alert alert-warning";
+      warningDiv.innerHTML = `
+        <strong>Warning:</strong> The following file(s) were excluded from the diff because they do not exist in the end commit:
+        <ul class="mb-0 mt-2">
+          ${excludedFiles.map((file) => `<li>${escapeHtml(file)}</li>`).join("")}
+        </ul>
+      `;
+      diffSummary?.appendChild(warningDiv);
+    }
+
     for (const file in diffs) {
       if (!Object.keys(diffs).includes(file)) continue;
       const diffContainer = document.createElement("div");

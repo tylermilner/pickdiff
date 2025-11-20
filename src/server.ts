@@ -37,12 +37,14 @@ function createApp(git: SimpleGit, repoPath: string): Express {
 
     try {
       const diffs: Record<string, string> = {};
+      const excludedFiles: string[] = [];
       for (const file of files) {
         // Check if file exists in the end commit
         try {
           await git.raw(["cat-file", "-e", `${endCommit}:${file}`]);
         } catch {
           // File doesn't exist in end commit, skip it
+          excludedFiles.push(file);
           continue;
         }
 
@@ -62,7 +64,7 @@ function createApp(git: SimpleGit, repoPath: string): Express {
         }
         diffs[file] = diff;
       }
-      res.json(diffs);
+      res.json({ diffs, excludedFiles });
     } catch (error) {
       res.status(500).json({
         error: error instanceof Error ? error.message : "Failed to get diffs",
