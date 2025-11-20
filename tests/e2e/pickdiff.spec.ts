@@ -1053,7 +1053,7 @@ test.describe("PickDiff Application", () => {
     // Assert
     // The frontend folder should be collapsed again (restored to original state)
     await expect(frontendFolderItem).toHaveClass(/collapsed/);
-    
+
     // The src folder should still be collapsed
     await expect(srcFolderItem).toHaveClass(/collapsed/);
 
