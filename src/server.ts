@@ -71,22 +71,48 @@ if (require.main === module) {
   const repoPath: string = process.argv[2] || process.cwd();
   const git: SimpleGit = simpleGit(repoPath);
   const app: Express = createApp(git, repoPath);
-  app.listen(port, async () => {
+  const server = app.listen(port, async () => {
     const url = `http://localhost:${port}`;
     console.log(`Server is running on ${url}`);
     console.log(`Using repository at: ${repoPath}`);
 
-    // Auto-open browser
+    // Auto-open browser, but don't wait for the browser process.
+    // Set NO_BROWSER=true in the environment to prevent auto-opening the browser.
+    // This prevents the server process from getting tied to the browser
+    // window lifecycle and allows `Ctrl+C` to exit cleanly.
     try {
-      const open = (await import("open")).default;
-      await open(url);
-      console.log(`Browser opened to ${url}`);
+      if (process.env.NO_BROWSER) {
+        console.log("NO_BROWSER set — not opening browser.");
+      } else {
+        const open = (await import("open")).default;
+        void open(url, { wait: false });
+        console.log(`Browser opened to ${url}`);
+      }
     } catch (error) {
       console.error(
         `Failed to open browser: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
   });
+
+  // Graceful shutdown: ensure server closes on SIGINT/SIGTERM.
+  // This allows `Ctrl+C` to stop the backend even if some child processes
+  // or handlers are running.
+  const shutdown = (signal: string) => {
+    console.log(`Received ${signal}. Shutting down server...`);
+    server.close(() => {
+      console.log("Server closed. Exiting process.");
+      process.exit(0);
+    });
+    // Fallback in case server.close hangs
+    setTimeout(() => {
+      console.error("Forcing exit after timeout.");
+      process.exit(1);
+    }, 5000);
+  };
+
+  process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
 export { createApp };

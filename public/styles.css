@@ -20,6 +20,29 @@
   margin-left: 20px;
 }
 
+#file-tree .folder-toggle {
+  cursor: pointer;
+  user-select: none;
+  display: inline-block;
+  width: 16px;
+  text-align: center;
+  margin-right: 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+#file-tree .folder-toggle:hover {
+  color: #000;
+}
+
+#file-tree .folder-item {
+  margin: 2px 0;
+}
+
+#file-tree .folder-item.collapsed > ul {
+  display: none;
+}
+
 .diff-container {
   margin-bottom: 20px;
 }

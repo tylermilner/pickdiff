@@ -65,6 +65,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let repoPath = "";
 
+  // Store the collapsed state of folders before auto-expanding during search
+  const savedCollapsedState = new Map<Element, boolean>();
+  let isSearchActive = false; // Track if a search is currently active
+
   // Toggle selected files container
   toggleSelectedFilesButton.addEventListener("click", () => {
     const isHidden = selectedFilesContainer.style.display === "none";
@@ -107,11 +111,59 @@ document.addEventListener("DOMContentLoaded", () => {
     const allItems = fileTree.querySelectorAll("li");
 
     if (!searchTerm) {
-      // Show all items if search is empty
+      // Show all items if search is empty and restore collapsed states
       allItems.forEach((item) => {
-        (item as HTMLElement).style.display = "";
+        const htmlItem = item as HTMLElement;
+        htmlItem.style.display = "";
+
+        // Restore the original collapsed state if it was saved during search
+        if (htmlItem.classList.contains("folder-item")) {
+          const wasCollapsed = savedCollapsedState.get(htmlItem);
+          if (wasCollapsed !== undefined) {
+            const nestedList =
+              htmlItem.querySelector<HTMLElement>(":scope > ul");
+            const toggle =
+              htmlItem.querySelector<HTMLElement>(".folder-toggle");
+
+            if (wasCollapsed) {
+              // Restore to collapsed state
+              htmlItem.classList.add("collapsed");
+              if (nestedList) nestedList.style.display = "none";
+              if (toggle) toggle.textContent = "▶";
+            } else {
+              // Restore to expanded state
+              htmlItem.classList.remove("collapsed");
+              if (nestedList) nestedList.style.display = "";
+              if (toggle) toggle.textContent = "▼";
+            }
+          } else if (htmlItem.classList.contains("collapsed")) {
+            // If no saved state, but folder is collapsed, re-hide its nested content
+            const nestedList =
+              htmlItem.querySelector<HTMLElement>(":scope > ul");
+            if (nestedList) {
+              nestedList.style.display = "none";
+            }
+          }
+        }
       });
+
+      // Clear the saved state and reset the search active flag
+      savedCollapsedState.clear();
+      isSearchActive = false;
       return;
+    }
+
+    // Save the current collapsed state only when transitioning from no search to search
+    if (!isSearchActive) {
+      allItems.forEach((item) => {
+        if ((item as HTMLElement).classList.contains("folder-item")) {
+          const isCollapsed = (item as HTMLElement).classList.contains(
+            "collapsed",
+          );
+          savedCollapsedState.set(item, isCollapsed);
+        }
+      });
+      isSearchActive = true;
     }
 
     allItems.forEach((item) => {
@@ -121,11 +173,21 @@ document.addEventListener("DOMContentLoaded", () => {
         const filePath = (fileCheckbox as HTMLInputElement).value.toLowerCase();
         if (filePath.includes(searchTerm)) {
           (item as HTMLElement).style.display = "";
-          // Show all parent folders
+          // Show all parent folders and expand them
           let parent = item.parentElement;
           while (parent && parent !== fileTree) {
             if (parent.tagName === "LI") {
               (parent as HTMLElement).style.display = "";
+              // Auto-expand parent folders when searching
+              if (parent.classList.contains("folder-item")) {
+                parent.classList.remove("collapsed");
+                const nestedList =
+                  parent.querySelector<HTMLElement>(":scope > ul");
+                const toggle =
+                  parent.querySelector<HTMLElement>(".folder-toggle");
+                if (nestedList) nestedList.style.display = "";
+                if (toggle) toggle.textContent = "▼";
+              }
             }
             parent = parent.parentElement;
           }
@@ -189,6 +251,29 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
+  function handleFolderToggle(toggleElement: HTMLElement): void {
+    const folderItem = toggleElement.closest(".folder-item");
+    if (!folderItem) return;
+
+    const nestedList = folderItem.querySelector<HTMLElement>(":scope > ul");
+    if (!nestedList) return;
+
+    // Toggle the collapsed state
+    const isCollapsed = folderItem.classList.contains("collapsed");
+
+    if (isCollapsed) {
+      // Expand the folder
+      folderItem.classList.remove("collapsed");
+      nestedList.style.display = "";
+      toggleElement.textContent = "▼";
+    } else {
+      // Collapse the folder
+      folderItem.classList.add("collapsed");
+      nestedList.style.display = "none";
+      toggleElement.textContent = "▶";
+    }
+  }
+
   diffForm.addEventListener("submit", async (event: Event) => {
     event.preventDefault();
 
@@ -249,6 +334,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     container.innerHTML = createTreeHtml(tree);
 
+    // Add event listeners to folder toggle icons
+    const folderToggles =
+      container.querySelectorAll<HTMLElement>(".folder-toggle");
+    folderToggles.forEach((toggle) => {
+      toggle.addEventListener("click", () => {
+        handleFolderToggle(toggle);
+      });
+    });
+
     // Add event listeners to file checkboxes to update select all state and folder states
     const fileCheckboxes = container.querySelectorAll<HTMLInputElement>(
       "input.file-checkbox",
@@ -285,7 +379,12 @@ document.addEventListener("DOMContentLoaded", () => {
       if (tree[key].isFile) {
         html += `<li><input type="checkbox" value="${escapeHtml(newPath)}" class="file-checkbox mr-2">${escapeHtml(key)}</li>`;
       } else {
-        html += `<li><input type="checkbox" class="folder-checkbox mr-2" data-folder-path="${escapeHtml(newPath)}"><strong>${escapeHtml(key)}</strong>${createTreeHtml(tree[key], newPath)}</li>`;
+        html += `<li class="folder-item">
+          <span class="folder-toggle" data-folder-path="${escapeHtml(newPath)}">▼</span>
+          <input type="checkbox" class="folder-checkbox mr-2" data-folder-path="${escapeHtml(newPath)}">
+          <strong>${escapeHtml(key)}</strong>
+          ${createTreeHtml(tree[key], newPath)}
+        </li>`;
       }
     }
     html += "</ul>";
