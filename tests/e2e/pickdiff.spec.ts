@@ -1020,12 +1020,13 @@ test.describe("PickDiff Application", () => {
         response.url().includes("/api/files") && response.status() === 200,
     );
 
-    // Collapse ALL folders including the frontend folder
+    // Collapse the frontend folder
     const frontendToggle = page.locator(
       '.folder-toggle[data-folder-path="frontend"]',
     );
     await frontendToggle.click();
 
+    // Collapse the src folder
     const srcToggle = page.locator('.folder-toggle[data-folder-path="src"]');
     await srcToggle.click();
 
@@ -1041,8 +1042,8 @@ test.describe("PickDiff Application", () => {
     await expect(srcFolderItem).toHaveClass(/collapsed/);
 
     // Act
-    // Search for "script" which will auto-expand the frontend folder
-    await page.fill("#file-search", "script");
+    // Search for "script.ts" which will auto-expand the frontend folder
+    await page.fill("#file-search", "script.ts");
 
     // Verify that frontend folder was auto-expanded during search
     await expect(frontendFolderItem).not.toHaveClass(/collapsed/);
