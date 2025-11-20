@@ -47,7 +47,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 2. **Make your changes** following our [style guidelines](#style-guidelines)
 3. **Add tests** if you've added code that should be tested
 4. **Ensure the test suite passes** by running `npm run test:all`
-5. **Commit your changes** - the pre-commit hook will automatically run the linter and fix issues
+5. **Run the linter** with `npm run lint:fix` to ensure code quality (the pre-commit hook will also run the linter when you commit your changes)
 6. **Update documentation** if needed
 7. **Write a clear commit message** following our guidelines
 8. **Submit the pull request**
