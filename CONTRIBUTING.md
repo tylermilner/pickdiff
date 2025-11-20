@@ -47,7 +47,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 2. **Make your changes** following our [style guidelines](#style-guidelines)
 3. **Add tests** if you've added code that should be tested
 4. **Ensure the test suite passes** by running `npm run test:all`
-5. **Run the linter** with `npm run lint:fix` to ensure code quality
+5. **Commit your changes** - the pre-commit hook will automatically run the linter and fix issues
 6. **Update documentation** if needed
 7. **Write a clear commit message** following our guidelines
 8. **Submit the pull request**
@@ -64,6 +64,8 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
    ```bash
    npm install
    ```
+
+   This will also set up Git hooks (via husky) that automatically run the linter before each commit.
 
 3. **Install Playwright browsers** (for E2E tests):
    ```bash
@@ -116,6 +118,8 @@ Notes:
 - Use **TypeScript** for all new code (both backend and frontend)
 - Use ES6 imports with `node:` prefix for Node.js built-ins (e.g., `node:path`)
 - Follow existing code patterns and conventions
+
+**Git Pre-commit Hook**: A pre-commit hook is automatically installed when you run `npm install`. This hook runs `lint-staged` which automatically lints and fixes all staged files before each commit. If there are linting errors that cannot be auto-fixed, the commit will be blocked.
 
 Run the linter to check for issues:
 ```bash
