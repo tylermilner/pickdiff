@@ -26,6 +26,9 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: "npm start",
+    // Ensure the server does not auto-open a browser during e2e runs
+    // (the server respects NO_BROWSER=true to skip opening the browser).
+    env: { NO_BROWSER: "true" },
     url: "http://localhost:3000",
     reuseExistingServer: !process.env.CI,
     timeout: 120 * 1000,
