@@ -591,6 +591,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Update folder checkbox states after applying saved selections
       updateFolderCheckboxStates();
       updateSelectedFilesList();
+      updateSelectAllState();
     }, 100); // Small delay to ensure elements are rendered
   }
 

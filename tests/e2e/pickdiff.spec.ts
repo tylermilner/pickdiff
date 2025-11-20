@@ -1315,4 +1315,72 @@ test.describe("PickDiff Application", () => {
     await expect(selectedFilesList).toContainText("src/server.ts");
     await expect(selectedCount).toHaveText("1");
   });
+
+  test("should show indeterminate state for select all checkbox on page load with partial selection", async ({
+    page,
+  }) => {
+    // Arrange
+    const repoPath = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+    const [endCommit, startCommit] = commits;
+
+    await page.goto("/");
+
+    // Fill in form data with real commit hashes
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select at least one file (required for form submission)
+    const firstCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .first();
+    await firstCheckbox.check();
+
+    // Ensure we have more than one file and the second one is unchecked
+    const allCheckboxes = page.locator("#file-tree input.file-checkbox");
+    const count = await allCheckboxes.count();
+    if (count > 1) {
+      const secondCheckbox = allCheckboxes.nth(1);
+      await secondCheckbox.uncheck();
+    } else {
+      // Fail test if not enough files to test partial selection
+      test.fail(true, "Not enough files to test partial selection");
+    }
+
+    // Submit the form to save selection to localStorage
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed (ensures form submission completed)
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Act
+    // Reload page
+    await page.reload();
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Wait for saved selections to be applied (there is a setTimeout in script.ts)
+    await page.waitForTimeout(200);
+
+    // Assert
+    const selectAllCheckbox = page.locator("#select-all");
+
+    // Check indeterminate state
+    const isIndeterminate = await selectAllCheckbox.evaluate(
+      (el: HTMLInputElement) => el.indeterminate,
+    );
+    expect(isIndeterminate).toBe(true);
+
+    // Also check it is not checked (since it is partial selection)
+    await expect(selectAllCheckbox).not.toBeChecked();
+  });
 });
