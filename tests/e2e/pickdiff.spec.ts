@@ -1025,7 +1025,9 @@ test.describe("PickDiff Application", () => {
       '.folder-toggle[data-folder-path="frontend"]',
     );
     const srcToggle = page.locator('.folder-toggle[data-folder-path="src"]');
-    const testsToggle = page.locator('.folder-toggle[data-folder-path="tests"]');
+    const testsToggle = page.locator(
+      '.folder-toggle[data-folder-path="tests"]',
+    );
 
     await frontendToggle.click();
     await srcToggle.click();
@@ -1080,10 +1082,8 @@ test.describe("PickDiff Application", () => {
     const frontendFile = page.locator(
       'input.file-checkbox[value="frontend/script.ts"]',
     );
-    const srcFile = page.locator(
-      'input.file-checkbox[value="src/server.ts"]',
-    );
-    
+    const srcFile = page.locator('input.file-checkbox[value="src/server.ts"]');
+
     await expect(frontendFile).not.toBeVisible();
     await expect(srcFile).not.toBeVisible();
   });
