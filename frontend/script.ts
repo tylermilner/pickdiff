@@ -48,6 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let repoPath = "";
 
+  // Store the collapsed state of folders before auto-expanding during search
+  const savedCollapsedState = new Map<Element, boolean>();
+
   // Fetch and display the repository path
   fetch("/api/repo-path")
     .then<RepoPathResponse>((response) => response.json())
@@ -82,24 +85,56 @@ document.addEventListener("DOMContentLoaded", () => {
     const allItems = fileTree.querySelectorAll("li");
 
     if (!searchTerm) {
-      // Show all items if search is empty, but respect collapsed state
+      // Show all items if search is empty and restore collapsed states
       allItems.forEach((item) => {
         const htmlItem = item as HTMLElement;
         htmlItem.style.display = "";
 
-        // If this is a collapsed folder, re-hide its nested content
-        if (
-          htmlItem.classList.contains("folder-item") &&
-          htmlItem.classList.contains("collapsed")
-        ) {
-          const nestedList = htmlItem.querySelector<HTMLElement>(":scope > ul");
-          if (nestedList) {
-            nestedList.style.display = "none";
+        // Restore the original collapsed state if it was saved during search
+        if (htmlItem.classList.contains("folder-item")) {
+          const wasCollapsed = savedCollapsedState.get(htmlItem);
+          if (wasCollapsed !== undefined) {
+            const nestedList =
+              htmlItem.querySelector<HTMLElement>(":scope > ul");
+            const toggle =
+              htmlItem.querySelector<HTMLElement>(".folder-toggle");
+
+            if (wasCollapsed) {
+              // Restore to collapsed state
+              htmlItem.classList.add("collapsed");
+              if (nestedList) nestedList.style.display = "none";
+              if (toggle) toggle.textContent = "▶";
+            } else {
+              // Restore to expanded state
+              htmlItem.classList.remove("collapsed");
+              if (nestedList) nestedList.style.display = "";
+              if (toggle) toggle.textContent = "▼";
+            }
+          } else if (htmlItem.classList.contains("collapsed")) {
+            // If no saved state, but folder is collapsed, re-hide its nested content
+            const nestedList =
+              htmlItem.querySelector<HTMLElement>(":scope > ul");
+            if (nestedList) {
+              nestedList.style.display = "none";
+            }
           }
         }
       });
+
+      // Clear the saved state after restoring
+      savedCollapsedState.clear();
       return;
     }
+
+    // Save the current collapsed state before auto-expanding
+    allItems.forEach((item) => {
+      if ((item as HTMLElement).classList.contains("folder-item")) {
+        const isCollapsed = (item as HTMLElement).classList.contains(
+          "collapsed",
+        );
+        savedCollapsedState.set(item, isCollapsed);
+      }
+    });
 
     allItems.forEach((item) => {
       const fileCheckbox = item.querySelector("input.file-checkbox");

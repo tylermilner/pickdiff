@@ -1020,13 +1020,12 @@ test.describe("PickDiff Application", () => {
         response.url().includes("/api/files") && response.status() === 200,
     );
 
-    // Collapse the frontend folder
+    // Collapse ALL folders including the frontend folder
     const frontendToggle = page.locator(
       '.folder-toggle[data-folder-path="frontend"]',
     );
     await frontendToggle.click();
 
-    // Collapse the src folder
     const srcToggle = page.locator('.folder-toggle[data-folder-path="src"]');
     await srcToggle.click();
 
@@ -1042,15 +1041,20 @@ test.describe("PickDiff Application", () => {
     await expect(srcFolderItem).toHaveClass(/collapsed/);
 
     // Act
-    // Search for a file
-    await page.fill("#file-search", "package.json");
+    // Search for "script" which will auto-expand the frontend folder
+    await page.fill("#file-search", "script");
+
+    // Verify that frontend folder was auto-expanded during search
+    await expect(frontendFolderItem).not.toHaveClass(/collapsed/);
 
     // Clear the search
     await page.fill("#file-search", "");
 
     // Assert
-    // The folders should still be collapsed
+    // The frontend folder should be collapsed again (restored to original state)
     await expect(frontendFolderItem).toHaveClass(/collapsed/);
+    
+    // The src folder should still be collapsed
     await expect(srcFolderItem).toHaveClass(/collapsed/);
 
     // Files within collapsed folders should not be visible
