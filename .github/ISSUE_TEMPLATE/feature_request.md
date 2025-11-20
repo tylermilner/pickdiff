@@ -1,8 +1,10 @@
 ---
 name: Feature Request
-description: Suggest an idea or enhancement
-labels: [enhancement]
-assignees: []
+about: Describe a new feature or changes to an existing feature
+title: ''
+labels: enhancement
+assignees: ''
+
 ---
 
 ## Summary

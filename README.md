@@ -50,6 +50,14 @@ npm start -- /path/to/your/repo
 
 Once started, the application will be accessible in your web browser at `http://localhost:3000`.
 
+If you don't want the browser to open automatically (for example, when running in CI
+or when you prefer to open a browser manually), set the `NO_BROWSER` environment
+variable to `true` when starting:
+
+```bash
+NO_BROWSER=true npm start
+```
+
 ## Usage
 
 1.  Start the application using one of the methods above.
@@ -59,6 +67,10 @@ Once started, the application will be accessible in your web browser at `http://
 5.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
 6.  Click the "Generate Summary" button.
 7.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.
+
+Stopping the server: use Ctrl+C in the terminal where `npm start` is running. The server
+now handles SIGINT/SIGTERM and will perform a graceful shutdown of the HTTP server
+so you won't leave orphaned processes running after closing the browser.
 
 ## Development
 
