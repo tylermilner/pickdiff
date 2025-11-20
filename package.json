@@ -26,7 +26,8 @@
     "test:e2e:ui": "npm run build && playwright test --ui",
     "test:all": "npm run build && jest && npm run test:e2e",
     "test:coverage": "jest --coverage",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "prepare": "husky"
   },
   "keywords": [
     "git",
@@ -53,10 +54,15 @@
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
     "concurrently": "^9.2.1",
+    "husky": "^9.1.7",
     "jest": "^30.0.5",
+    "lint-staged": "^16.2.7",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3"
+  },
+  "lint-staged": {
+    "*.{js,ts,json,md}": "biome check --write --unsafe --no-errors-on-unmatched"
   }
 }
