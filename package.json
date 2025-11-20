@@ -1,6 +1,6 @@
 {
   "name": "pickdiff",
-  "version": "1.0.0",
+  "version": "0.1.0",
   "description": "A simple app to selectively diff files between two Git commits.",
   "main": "dist/server.js",
   "scripts": {

@@ -1,5 +1,10 @@
 # PickDiff
 
+[![Tests](https://github.com/tylermilner/pickdiff/actions/workflows/tests.yml/badge.svg)](https://github.com/tylermilner/pickdiff/actions/workflows/tests.yml)
+[![codecov](https://codecov.io/gh/tylermilner/pickdiff/branch/main/graph/badge.svg)](https://codecov.io/gh/tylermilner/pickdiff)
+[![npm version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/tylermilner/pickdiff/blob/main/package.json)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/tylermilner/pickdiff/blob/main/LICENSE)
+
 A simple app to display a visual diff of selected files between two commits in a Git repository.
 
 ## Why?
