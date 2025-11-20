@@ -32,6 +32,19 @@ document.addEventListener("DOMContentLoaded", () => {
     "select-all",
   ) as HTMLInputElement | null;
 
+  const selectedFilesContainer = document.getElementById(
+    "selected-files-container",
+  ) as HTMLElement | null;
+  const selectedFilesList = document.getElementById(
+    "selected-files-list",
+  ) as HTMLElement | null;
+  const selectedCountSpan = document.getElementById(
+    "selected-count",
+  ) as HTMLElement | null;
+  const toggleSelectedFilesButton = document.getElementById(
+    "toggle-selected-files",
+  ) as HTMLButtonElement | null;
+
   if (
     !repoPathSpan ||
     !fileTree ||
@@ -40,7 +53,11 @@ document.addEventListener("DOMContentLoaded", () => {
     !startCommitInput ||
     !endCommitInput ||
     !fileSearchInput ||
-    !selectAllCheckbox
+    !selectAllCheckbox ||
+    !selectedFilesContainer ||
+    !selectedFilesList ||
+    !selectedCountSpan ||
+    !toggleSelectedFilesButton
   ) {
     console.error("Missing required DOM elements.");
     return;
@@ -51,6 +68,13 @@ document.addEventListener("DOMContentLoaded", () => {
   // Store the collapsed state of folders before auto-expanding during search
   const savedCollapsedState = new Map<Element, boolean>();
   let isSearchActive = false; // Track if a search is currently active
+
+  // Toggle selected files container
+  toggleSelectedFilesButton.addEventListener("click", () => {
+    const isHidden = selectedFilesContainer.style.display === "none";
+    selectedFilesContainer.style.display = isHidden ? "block" : "none";
+    toggleSelectedFilesButton.textContent = isHidden ? "Hide" : "Show";
+  });
 
   // Fetch and display the repository path
   fetch("/api/repo-path")
@@ -78,6 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
     checkboxes.forEach((checkbox) => {
       checkbox.checked = isChecked;
     });
+    updateSelectedFilesList();
   });
 
   function filterFileTree(searchTerm: string): void {
@@ -326,6 +351,7 @@ document.addEventListener("DOMContentLoaded", () => {
       checkbox.addEventListener("change", () => {
         updateFolderCheckboxStates();
         updateSelectAllState();
+        updateSelectedFilesList();
       });
     });
 
@@ -342,6 +368,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Initialize folder checkbox states and select all state
     updateFolderCheckboxStates();
     updateSelectAllState();
+    updateSelectedFilesList();
   }
 
   function createTreeHtml(tree: FileTreeNode, path: string = ""): string {
@@ -430,6 +457,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Update folder checkbox states (this will also update nested folders)
     updateFolderCheckboxStates();
     updateSelectAllState();
+    updateSelectedFilesList();
   }
 
   function updateFolderCheckboxStates(): void {
@@ -562,7 +590,27 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       // Update folder checkbox states after applying saved selections
       updateFolderCheckboxStates();
+      updateSelectedFilesList();
     }, 100); // Small delay to ensure elements are rendered
+  }
+
+  function updateSelectedFilesList(): void {
+    if (!selectedCountSpan || !selectedFilesList) return;
+
+    const selectedFiles = getSelectedFiles();
+    selectedCountSpan.textContent = selectedFiles.length.toString();
+
+    if (selectedFiles.length === 0) {
+      selectedFilesList.innerHTML =
+        '<p class="text-muted mb-0">No files selected</p>';
+    } else {
+      const fileItems = selectedFiles
+        .map(
+          (file) => `<div class="selected-file-item">${escapeHtml(file)}</div>`,
+        )
+        .join("");
+      selectedFilesList.innerHTML = fileItems;
+    }
   }
 
   function escapeHtml(unsafe: string): string {

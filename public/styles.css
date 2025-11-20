@@ -69,3 +69,19 @@
   color: red;
   background-color: #fdd;
 }
+
+#selected-files-container {
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: #f8f9fa;
+}
+
+#selected-files-list {
+  font-family: monospace;
+  font-size: 0.9rem;
+}
+
+#selected-files-list .selected-file-item {
+  padding: 2px 0;
+  word-break: break-all;
+}

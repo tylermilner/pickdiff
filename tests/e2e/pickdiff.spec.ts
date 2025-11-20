@@ -1087,4 +1087,232 @@ test.describe("PickDiff Application", () => {
     await expect(frontendFile).not.toBeVisible();
     await expect(srcFile).not.toBeVisible();
   });
+
+  test("should display selected files summary section", async ({ page }) => {
+    // Act
+    await page.goto("/");
+
+    // Assert
+    // Check that selected files section exists
+    const selectedFilesLabel = page.locator('label:has-text("Selected Files")');
+    await expect(selectedFilesLabel).toBeVisible();
+
+    // Check that count is displayed
+    const selectedCount = page.locator("#selected-count");
+    await expect(selectedCount).toHaveText("0");
+
+    // Check that toggle button exists
+    const toggleButton = page.locator("#toggle-selected-files");
+    await expect(toggleButton).toBeVisible();
+    await expect(toggleButton).toHaveText("Show");
+  });
+
+  test("should update selected files count when files are selected", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    const selectedCount = page.locator("#selected-count");
+
+    // Initially count should be 0
+    await expect(selectedCount).toHaveText("0");
+
+    // Act
+    // Select one file
+    const firstCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .first();
+    await firstCheckbox.check();
+
+    // Assert
+    await expect(selectedCount).toHaveText("1");
+
+    // Act
+    // Select another file
+    const secondCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .nth(1);
+    await secondCheckbox.check();
+
+    // Assert
+    await expect(selectedCount).toHaveText("2");
+  });
+
+  test("should toggle selected files list visibility", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    const toggleButton = page.locator("#toggle-selected-files");
+    const selectedFilesContainer = page.locator("#selected-files-container");
+
+    // Initially container should be hidden
+    await expect(selectedFilesContainer).toBeHidden();
+    await expect(toggleButton).toHaveText("Show");
+
+    // Act
+    await toggleButton.click();
+
+    // Assert
+    await expect(selectedFilesContainer).toBeVisible();
+    await expect(toggleButton).toHaveText("Hide");
+
+    // Act
+    await toggleButton.click();
+
+    // Assert
+    await expect(selectedFilesContainer).toBeHidden();
+    await expect(toggleButton).toHaveText("Show");
+  });
+
+  test("should display selected files in the list", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Select some files
+    const readmeCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="README.md"]',
+    );
+    await readmeCheckbox.check();
+
+    const packageCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="package.json"]',
+    );
+    await packageCheckbox.check();
+
+    // Act
+    // Show the selected files list
+    const toggleButton = page.locator("#toggle-selected-files");
+    await toggleButton.click();
+
+    // Assert
+    const selectedFilesList = page.locator("#selected-files-list");
+    await expect(selectedFilesList).toBeVisible();
+
+    // Check that the selected files are displayed
+    await expect(selectedFilesList).toContainText("README.md");
+    await expect(selectedFilesList).toContainText("package.json");
+  });
+
+  test("should show 'No files selected' message when no files are selected", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Act
+    // Show the selected files list without selecting any files
+    const toggleButton = page.locator("#toggle-selected-files");
+    await toggleButton.click();
+
+    // Assert
+    const selectedFilesList = page.locator("#selected-files-list");
+    await expect(selectedFilesList).toContainText("No files selected");
+  });
+
+  test("should update selected files list when files are deselected", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Select some files
+    const readmeCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="README.md"]',
+    );
+    await readmeCheckbox.check();
+
+    const packageCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="package.json"]',
+    );
+    await packageCheckbox.check();
+
+    // Show the selected files list
+    const toggleButton = page.locator("#toggle-selected-files");
+    await toggleButton.click();
+
+    const selectedFilesList = page.locator("#selected-files-list");
+    const selectedCount = page.locator("#selected-count");
+
+    // Verify both files are in the list
+    await expect(selectedFilesList).toContainText("README.md");
+    await expect(selectedFilesList).toContainText("package.json");
+    await expect(selectedCount).toHaveText("2");
+
+    // Act
+    // Deselect one file
+    await readmeCheckbox.uncheck();
+
+    // Assert
+    // README.md should no longer be in the list
+    await expect(selectedFilesList).not.toContainText("README.md");
+    await expect(selectedFilesList).toContainText("package.json");
+    await expect(selectedCount).toHaveText("1");
+  });
+
+  test("should update selected files list when folder is selected", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Show the selected files list
+    const toggleButton = page.locator("#toggle-selected-files");
+    await toggleButton.click();
+
+    const selectedFilesList = page.locator("#selected-files-list");
+    const selectedCount = page.locator("#selected-count");
+
+    // Initially no files selected
+    await expect(selectedFilesList).toContainText("No files selected");
+    await expect(selectedCount).toHaveText("0");
+
+    // Act
+    // Select the src folder
+    const srcFolderCheckbox = page.locator(
+      'input.folder-checkbox[data-folder-path="src"]',
+    );
+    await srcFolderCheckbox.check();
+
+    // Assert
+    // Should show src/server.ts in the list
+    await expect(selectedFilesList).toContainText("src/server.ts");
+    await expect(selectedCount).toHaveText("1");
+  });
 });
