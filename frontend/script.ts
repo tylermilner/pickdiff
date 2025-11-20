@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Store the collapsed state of folders before auto-expanding during search
   const savedCollapsedState = new Map<Element, boolean>();
+  let isSearchActive = false; // Track if a search is currently active
 
   // Fetch and display the repository path
   fetch("/api/repo-path")
@@ -121,20 +122,24 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
 
-      // Clear the saved state after restoring
+      // Clear the saved state and reset the search active flag
       savedCollapsedState.clear();
+      isSearchActive = false;
       return;
     }
 
-    // Save the current collapsed state before auto-expanding
-    allItems.forEach((item) => {
-      if ((item as HTMLElement).classList.contains("folder-item")) {
-        const isCollapsed = (item as HTMLElement).classList.contains(
-          "collapsed",
-        );
-        savedCollapsedState.set(item, isCollapsed);
-      }
-    });
+    // Save the current collapsed state only when transitioning from no search to search
+    if (!isSearchActive) {
+      allItems.forEach((item) => {
+        if ((item as HTMLElement).classList.contains("folder-item")) {
+          const isCollapsed = (item as HTMLElement).classList.contains(
+            "collapsed",
+          );
+          savedCollapsedState.set(item, isCollapsed);
+        }
+      });
+      isSearchActive = true;
+    }
 
     allItems.forEach((item) => {
       const fileCheckbox = item.querySelector("input.file-checkbox");

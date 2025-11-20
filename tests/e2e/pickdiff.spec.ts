@@ -1020,15 +1020,16 @@ test.describe("PickDiff Application", () => {
         response.url().includes("/api/files") && response.status() === 200,
     );
 
-    // Collapse the frontend folder
+    // Collapse specific folders that we'll test
     const frontendToggle = page.locator(
       '.folder-toggle[data-folder-path="frontend"]',
     );
-    await frontendToggle.click();
-
-    // Collapse the src folder
     const srcToggle = page.locator('.folder-toggle[data-folder-path="src"]');
+    const testsToggle = page.locator('.folder-toggle[data-folder-path="tests"]');
+
+    await frontendToggle.click();
     await srcToggle.click();
+    await testsToggle.click();
 
     // Verify folders are collapsed
     const frontendFolderItem = page.locator(".folder-item").filter({
@@ -1037,31 +1038,53 @@ test.describe("PickDiff Application", () => {
     const srcFolderItem = page.locator(".folder-item").filter({
       has: srcToggle,
     });
+    const testsFolderItem = page.locator(".folder-item").filter({
+      has: testsToggle,
+    });
 
     await expect(frontendFolderItem).toHaveClass(/collapsed/);
     await expect(srcFolderItem).toHaveClass(/collapsed/);
+    await expect(testsFolderItem).toHaveClass(/collapsed/);
 
     // Act
-    // Search for "script.ts" which will auto-expand the frontend folder
-    await page.fill("#file-search", "script.ts");
+    // Type the search term character by character to simulate real user input
+    // This is critical: it tests that the collapsed state is saved only once,
+    // not on every keystroke. The bug was that each keystroke would overwrite
+    // the saved state with the current (potentially expanded) state.
+    const searchInput = page.locator("#file-search");
 
-    // Verify that frontend folder was auto-expanded during search
+    // Search for "s", which will match several folders
+    await searchInput.fill("s");
+
+    // Add another character to the search - the current expanded state of the folders should not be overwritten
+    await searchInput.fill("sc");
+
+    // Verify that folders matching "s" or "sc" were auto-expanded during search
     await expect(frontendFolderItem).not.toHaveClass(/collapsed/);
+    await expect(srcFolderItem).not.toHaveClass(/collapsed/);
+    await expect(testsFolderItem).not.toHaveClass(/collapsed/);
 
     // Clear the search
-    await page.fill("#file-search", "");
+    await searchInput.fill("");
 
     // Assert
-    // The frontend folder should be collapsed again (restored to original state)
+    // ALL folders should be collapsed again (restored to original state)
+    // Without the fix, folders that were expanded during intermediate search states
+    // (like "sc" matching both frontend and src) would remain expanded because
+    // their collapsed state was overwritten when the user typed additional characters
     await expect(frontendFolderItem).toHaveClass(/collapsed/);
-
-    // The src folder should still be collapsed
     await expect(srcFolderItem).toHaveClass(/collapsed/);
+    await expect(testsFolderItem).toHaveClass(/collapsed/);
 
     // Files within collapsed folders should not be visible
     const frontendFile = page.locator(
       'input.file-checkbox[value="frontend/script.ts"]',
     );
+    const srcFile = page.locator(
+      'input.file-checkbox[value="src/server.ts"]',
+    );
+    
     await expect(frontendFile).not.toBeVisible();
+    await expect(srcFile).not.toBeVisible();
   });
 });
