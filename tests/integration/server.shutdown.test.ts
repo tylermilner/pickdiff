@@ -17,21 +17,32 @@ describe("Server shutdown behavior", () => {
       const onData = (chunk: Buffer) => {
         const text = chunk.toString();
         if (text.includes("Server is running on")) {
+          cleanup();
           resolve();
         }
       };
 
-      const onError = (err: Error) => reject(err);
+      const onError = (err: Error) => {
+        cleanup();
+        reject(err);
+      };
 
       child.stdout?.on("data", onData);
       child.stderr?.on("data", onData);
       child.on("error", onError);
 
       // Safety timeout
-      setTimeout(
-        () => reject(new Error("Server failed to start in time")),
-        5000,
-      );
+      const timeout = setTimeout(() => {
+        cleanup();
+        reject(new Error("Server failed to start in time"));
+      }, 5000);
+
+      function cleanup() {
+        clearTimeout(timeout);
+        child.stdout?.off("data", onData);
+        child.stderr?.off("data", onData);
+        child.off("error", onError);
+      }
     });
 
     // Send SIGINT
@@ -39,9 +50,32 @@ describe("Server shutdown behavior", () => {
 
     // Wait for it to exit
     const code = await new Promise<number | null>((resolve) => {
-      child.on("exit", (exitCode) => resolve(exitCode));
-      setTimeout(() => resolve(null), 5000);
+      const onExit = (exitCode: number | null) => {
+        cleanupExit();
+        resolve(exitCode);
+      };
+
+      const timeout = setTimeout(() => {
+        cleanupExit();
+        resolve(null);
+      }, 5000);
+
+      function cleanupExit() {
+        clearTimeout(timeout);
+        child.off("exit", onExit);
+      }
+
+      child.on("exit", onExit);
     });
+
+    // Ensure no orphan child remains
+    if (!child.killed && child.exitCode === null) {
+      try {
+        child.kill("SIGKILL");
+      } catch {
+        // ignore
+      }
+    }
 
     expect(code).toBe(0);
   }, 20000);
