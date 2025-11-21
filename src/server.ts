@@ -4,14 +4,14 @@ import simpleGit, { type SimpleGit } from "simple-git";
 
 /**
  * Strip git diff headers from diff output, keeping only the actual diff content.
- * Removes lines like:
+ * Removes header lines like:
  * - diff --git a/file b/file
  * - index abc123..def456
  * - --- a/file
  * - +++ b/file
- * - @@ -1,3 +1,4 @@
+ * - @@ -1,3 +1,4 @@ (hunk headers - used as markers for where content begins)
  * @param diff The raw diff output from git
- * @returns The diff content without headers
+ * @returns The diff content without headers (only the actual +/- lines and context)
  */
 function stripDiffHeaders(diff: string): string {
   const lines = diff.split("\n");
