@@ -19,16 +19,6 @@ function stripDiffHeaders(diff: string): string {
   let inContent = false;
 
   for (const line of lines) {
-    // Skip header lines
-    if (
-      line.startsWith("diff --git ") ||
-      line.startsWith("index ") ||
-      line.startsWith("--- ") ||
-      line.startsWith("+++ ")
-    ) {
-      continue;
-    }
-
     // When we hit a hunk header (@@), mark that we're in content but skip the header itself
     if (line.startsWith("@@ ")) {
       inContent = true;
@@ -38,6 +28,16 @@ function stripDiffHeaders(diff: string): string {
     // Once we're in content, keep all lines
     if (inContent) {
       contentLines.push(line);
+      continue;
+    }
+
+    // Before we're in content, skip header lines
+    if (
+      line.startsWith("diff --git ") ||
+      line.startsWith("index ") ||
+      line.startsWith("--- ") ||
+      line.startsWith("+++ ")
+    ) {
     }
   }
 
