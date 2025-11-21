@@ -60,6 +60,13 @@
   border-radius: 5px;
 }
 
+.diff-content.no-changes {
+  background-color: #f8f9fa;
+  text-align: center;
+  padding: 20px;
+  font-style: italic;
+}
+
 .diff-content .addition {
   color: green;
   background-color: #dfd;

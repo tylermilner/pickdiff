@@ -138,8 +138,19 @@ describe("PickDiff Server API", () => {
 
     it("should handle new files with empty diff", async () => {
       // Arrange
-      mockGit.raw.mockResolvedValue(""); // cat-file check passes
-      mockGit.diff.mockResolvedValue(""); // Empty diff indicates new file
+      // Mock cat-file check for end commit (file exists)
+      mockGit.raw.mockImplementation((...args: unknown[]) => {
+        const argsArray = args.flat();
+        if (argsArray.includes("def456:newfile.js")) {
+          return Promise.resolve(""); // File exists in end commit
+        }
+        if (argsArray.includes("abc123:newfile.js")) {
+          // File doesn't exist in start commit (new file)
+          return Promise.reject(new Error("path does not exist"));
+        }
+        return Promise.resolve("");
+      });
+      mockGit.diff.mockResolvedValue(""); // Empty diff
       mockGit.show.mockResolvedValue("line1\nline2\nline3");
 
       // Act
@@ -156,6 +167,27 @@ describe("PickDiff Server API", () => {
       expect(response.body.diffs["newfile.js"]).toBe("+line1\n+line2\n+line3");
       expect(response.body.excludedFiles).toEqual([]);
       expect(mockGit.show).toHaveBeenCalledWith(["def456:newfile.js"]);
+    });
+
+    it("should handle unchanged files with NO_CHANGES marker", async () => {
+      // Arrange
+      mockGit.raw.mockResolvedValue(""); // File exists in both commits
+      mockGit.diff.mockResolvedValue(""); // Empty diff (unchanged)
+
+      // Act
+      const response = await request(app)
+        .post("/api/diff")
+        .send({
+          startCommit: "abc123",
+          endCommit: "def456",
+          files: ["unchanged.js"],
+        })
+        .expect(200);
+
+      // Assert
+      expect(response.body.diffs["unchanged.js"]).toBe("NO_CHANGES");
+      expect(response.body.excludedFiles).toEqual([]);
+      expect(mockGit.show).not.toHaveBeenCalled();
     });
 
     it("should return 400 for missing startCommit", async () => {
@@ -244,6 +276,17 @@ describe("PickDiff Server API", () => {
 
     it("should return 500 error when git show fails for new file", async () => {
       // Arrange
+      mockGit.raw.mockImplementation((...args: unknown[]) => {
+        const argsArray = args.flat();
+        if (argsArray.includes("def456:newfile.js")) {
+          return Promise.resolve(""); // File exists in end commit
+        }
+        if (argsArray.includes("abc123:newfile.js")) {
+          // File doesn't exist in start commit (new file)
+          return Promise.reject(new Error("path does not exist"));
+        }
+        return Promise.resolve("");
+      });
       mockGit.diff.mockResolvedValue(""); // Empty diff
       mockGit.show.mockRejectedValue(new Error("Git show error"));
 

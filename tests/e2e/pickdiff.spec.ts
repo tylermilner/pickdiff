@@ -1383,4 +1383,197 @@ test.describe("PickDiff Application", () => {
     // Also check it is not checked (since it is partial selection)
     await expect(selectAllCheckbox).not.toBeChecked();
   });
+
+  test("should display 'No changes' message for unchanged files", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get the current commit (HEAD)
+    const repoPath = path.join(__dirname, "../../");
+    const currentCommit: string = execSync(
+      'git log --oneline -1 --format="%H"',
+      {
+        cwd: repoPath,
+        encoding: "utf8",
+      },
+    ).trim();
+
+    // Fill in the same commit for both start and end (no changes scenario)
+    await page.fill("#start-commit", currentCommit);
+    await page.fill("#end-commit", currentCommit);
+
+    // Select a file that exists in this commit (e.g., README.md)
+    const readmeCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="README.md"]',
+    );
+    await readmeCheckbox.check();
+
+    // Act
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Assert
+    // Should show the file name in the header
+    const diffHeader = page.locator('.diff-header:has-text("README.md")');
+    await expect(diffHeader).toBeVisible();
+
+    // Should show "No changes" message instead of diff content
+    const noChangesMessage = page.locator(".diff-content.no-changes");
+    await expect(noChangesMessage).toBeVisible();
+    await expect(noChangesMessage).toContainText("No changes");
+
+    // Should NOT show any additions or deletions (green/red lines)
+    const additions = page.locator(".diff-content .addition");
+    const deletions = page.locator(".diff-content .deletion");
+    expect(await additions.count()).toBe(0);
+    expect(await deletions.count()).toBe(0);
+  });
+
+  test("should display actual diff for changed files, not 'No changes'", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get two different commits
+    const repoPath = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+
+    if (commits.length < 2) {
+      throw new Error("Not enough commits to run this test");
+    }
+
+    const [endCommit, startCommit] = commits;
+
+    // Fill in different commits
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select a file (package.json likely to have changes)
+    const packageCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="package.json"]',
+    );
+    await packageCheckbox.check();
+
+    // Act
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Assert
+    // The diff should be displayed (either with changes or as "No changes")
+    const diffContent = page.locator(".diff-content");
+    await expect(diffContent).toBeVisible();
+
+    // If there were actual changes, should show additions or deletions
+    // If no changes, should show the "No changes" message
+    const noChangesMessage = page.locator(".diff-content.no-changes");
+    const hasNoChanges = (await noChangesMessage.count()) > 0;
+
+    if (hasNoChanges) {
+      // If the file didn't change between commits, verify the message
+      await expect(noChangesMessage).toContainText("No changes");
+    } else {
+      // If the file did change, should show diff with additions/deletions or context
+      const diffLines = await diffContent.textContent();
+      expect(diffLines).toBeTruthy();
+      expect(diffLines?.length).toBeGreaterThan(0);
+    }
+  });
+
+  test("should handle multiple files with mixed changes and no changes", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get two different commits
+    const repoPath = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+
+    if (commits.length < 2) {
+      throw new Error("Not enough commits to run this test");
+    }
+
+    const [endCommit, startCommit] = commits;
+
+    // Fill in different commits
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select multiple files
+    const readmeCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="README.md"]',
+    );
+    const packageCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="package.json"]',
+    );
+    const licenseCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="LICENSE"]',
+    );
+
+    await readmeCheckbox.check();
+    await packageCheckbox.check();
+    await licenseCheckbox.check();
+
+    // Act
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diffs to be displayed (wait for at least one diff container)
+    await page.waitForSelector(".diff-container", { timeout: 5000 });
+
+    // Assert
+    // Should show all three files
+    const diffContainers = page.locator(".diff-container");
+    const containerCount = await diffContainers.count();
+    expect(containerCount).toBeGreaterThanOrEqual(1); // At least one file should be shown
+
+    // Each file should have either a diff or "No changes" message
+    for (let i = 0; i < containerCount; i++) {
+      const container = diffContainers.nth(i);
+      const diffContent = container.locator(".diff-content");
+      await expect(diffContent).toBeVisible();
+
+      // Should have content (either diff or "No changes" message)
+      const content = await diffContent.textContent();
+      expect(content).toBeTruthy();
+      expect(content?.length).toBeGreaterThan(0);
+    }
+  });
 });

@@ -55,12 +55,29 @@ function createApp(git: SimpleGit, repoPath: string): Express {
         ]);
 
         if (!diff) {
-          // If diff is empty, it means the file is either new or unchanged
-          const fileContent: string = await git.show([`${endCommit}:${file}`]);
-          diff = fileContent
-            .split("\n")
-            .map((line) => `+${line}`)
-            .join("\n");
+          // If diff is empty, check if file exists in start commit
+          let fileExistsInStartCommit = false;
+          try {
+            await git.raw(["cat-file", "-e", `${startCommit}:${file}`]);
+            fileExistsInStartCommit = true;
+          } catch {
+            // File doesn't exist in start commit
+            fileExistsInStartCommit = false;
+          }
+
+          if (fileExistsInStartCommit) {
+            // File exists in both commits with no changes - use special marker
+            diff = "NO_CHANGES";
+          } else {
+            // File is new in end commit - show as all additions
+            const fileContent: string = await git.show([
+              `${endCommit}:${file}`,
+            ]);
+            diff = fileContent
+              .split("\n")
+              .map((line) => `+${line}`)
+              .join("\n");
+          }
         }
         diffs[file] = diff;
       }
