@@ -110,6 +110,7 @@ describe("PickDiff Server API", () => {
 
     it("should return diffs for specified files", async () => {
       // Arrange
+      mockGit.raw.mockResolvedValue(""); // cat-file check passes
       mockGit.diff.mockImplementation((...args: unknown[]) => {
         const argsArray = args.flat();
         if (argsArray.includes("file1.js")) {
@@ -129,13 +130,15 @@ describe("PickDiff Server API", () => {
         .expect(200);
 
       // Assert
-      expect(response.body["file1.js"]).toBe("-old line\n+new line");
-      expect(response.body["file2.js"]).toBe("+added line");
+      expect(response.body.diffs["file1.js"]).toBe("-old line\n+new line");
+      expect(response.body.diffs["file2.js"]).toBe("+added line");
+      expect(response.body.excludedFiles).toEqual([]);
       expect(mockGit.diff).toHaveBeenCalledTimes(2);
     });
 
     it("should handle new files with empty diff", async () => {
       // Arrange
+      mockGit.raw.mockResolvedValue(""); // cat-file check passes
       mockGit.diff.mockResolvedValue(""); // Empty diff indicates new file
       mockGit.show.mockResolvedValue("line1\nline2\nline3");
 
@@ -150,7 +153,8 @@ describe("PickDiff Server API", () => {
         .expect(200);
 
       // Assert
-      expect(response.body["newfile.js"]).toBe("+line1\n+line2\n+line3");
+      expect(response.body.diffs["newfile.js"]).toBe("+line1\n+line2\n+line3");
+      expect(response.body.excludedFiles).toEqual([]);
       expect(mockGit.show).toHaveBeenCalledWith(["def456:newfile.js"]);
     });
 
@@ -269,6 +273,74 @@ describe("PickDiff Server API", () => {
 
       // Assert
       expect(response.body).toHaveProperty("error", "Failed to get diffs");
+    });
+
+    it("should skip files that don't exist in end commit", async () => {
+      // Arrange
+      // Mock git.raw for cat-file checks
+      mockGit.raw.mockImplementation((...args: unknown[]) => {
+        const argsArray = args.flat();
+        if (
+          argsArray.includes("cat-file") &&
+          argsArray.includes("def456:file1.js")
+        ) {
+          return Promise.resolve(""); // File exists in end commit
+        }
+        if (
+          argsArray.includes("cat-file") &&
+          argsArray.includes("def456:file2.js")
+        ) {
+          // File doesn't exist in end commit
+          return Promise.reject(
+            new Error("path 'file2.js' does not exist in 'def456'"),
+          );
+        }
+        return Promise.resolve("");
+      });
+
+      mockGit.diff.mockResolvedValue("-old line\n+new line");
+
+      // Act
+      const response = await request(app)
+        .post("/api/diff")
+        .send({
+          startCommit: "abc123",
+          endCommit: "def456",
+          files: ["file1.js", "file2.js"],
+        })
+        .expect("Content-Type", /json/)
+        .expect(200);
+
+      // Assert
+      // Only file1.js should be in the response, file2.js should be skipped
+      expect(response.body.diffs["file1.js"]).toBe("-old line\n+new line");
+      expect(response.body.diffs["file2.js"]).toBeUndefined();
+      expect(response.body.excludedFiles).toEqual(["file2.js"]);
+      expect(Object.keys(response.body.diffs)).toHaveLength(1);
+    });
+
+    it("should return empty object when all files don't exist in end commit", async () => {
+      // Arrange
+      mockGit.raw.mockRejectedValue(new Error("path does not exist in commit"));
+
+      // Act
+      const response = await request(app)
+        .post("/api/diff")
+        .send({
+          startCommit: "abc123",
+          endCommit: "def456",
+          files: ["nonexistent1.js", "nonexistent2.js"],
+        })
+        .expect("Content-Type", /json/)
+        .expect(200);
+
+      // Assert
+      expect(response.body.diffs).toEqual({});
+      expect(response.body.excludedFiles).toEqual([
+        "nonexistent1.js",
+        "nonexistent2.js",
+      ]);
+      expect(Object.keys(response.body.diffs)).toHaveLength(0);
     });
   });
 });

@@ -103,7 +103,8 @@ describe("PickDiff Integration Tests", () => {
         .expect(200);
 
       // Assert
-      expect(response.body["package.json"]).toBeDefined();
+      expect(response.body.diffs["package.json"]).toBeDefined();
+      expect(response.body.excludedFiles).toBeDefined();
     });
 
     it("should return 400 for invalid diff request", async () => {
