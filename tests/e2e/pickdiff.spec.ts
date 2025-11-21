@@ -1508,6 +1508,36 @@ test.describe("PickDiff Application", () => {
     page,
   }) => {
     // Arrange
+    // Get the last two commits that touched package.json (guarantees package.json changed)
+    const repoPath = path.join(__dirname, "../../");
+    const pkgCommitsRaw = execSync(
+      "git rev-list --max-count=2 HEAD -- package.json",
+      { cwd: repoPath, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n");
+
+    if (pkgCommitsRaw.length < 2) {
+      throw new Error(
+        "Not enough commits modifying package.json to run this test.",
+      );
+    }
+
+    const [endCommit, startCommit] = pkgCommitsRaw; // end = newer, start = older
+
+    // Check if LICENSE changed between these commits (it shouldn't have in most cases)
+    const licenseDiff = execSync(
+      `git diff ${startCommit}..${endCommit} -- LICENSE`,
+      { cwd: repoPath, encoding: "utf8" },
+    ).trim();
+
+    if (licenseDiff) {
+      throw new Error(
+        "LICENSE changed between the same commits where package.json changed. " +
+          "This test assumes LICENSE remains unchanged. Please update the test to use different files.",
+      );
+    }
+
     await page.goto("/");
 
     // Wait for file tree to load
@@ -1516,29 +1546,11 @@ test.describe("PickDiff Application", () => {
         response.url().includes("/api/files") && response.status() === 200,
     );
 
-    // Get two different commits
-    const repoPath = path.join(__dirname, "../../");
-    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
-      cwd: repoPath,
-      encoding: "utf8",
-    })
-      .trim()
-      .split("\n");
-
-    if (commits.length < 2) {
-      throw new Error("Not enough commits to run this test");
-    }
-
-    const [endCommit, startCommit] = commits;
-
-    // Fill in different commits
+    // Fill in commits where package.json changed but LICENSE didn't
     await page.fill("#start-commit", startCommit);
     await page.fill("#end-commit", endCommit);
 
-    // Select multiple files
-    const readmeCheckbox = page.locator(
-      '#file-tree input.file-checkbox[value="README.md"]',
-    );
+    // Select both files
     const packageCheckbox = page.locator(
       '#file-tree input.file-checkbox[value="package.json"]',
     );
@@ -1546,7 +1558,6 @@ test.describe("PickDiff Application", () => {
       '#file-tree input.file-checkbox[value="LICENSE"]',
     );
 
-    await readmeCheckbox.check();
     await packageCheckbox.check();
     await licenseCheckbox.check();
 
@@ -1554,25 +1565,47 @@ test.describe("PickDiff Application", () => {
     // Submit the form
     await page.click('button[type="submit"]');
 
-    // Wait for diffs to be displayed (wait for at least one diff container)
+    // Wait for diffs to be displayed
     await page.waitForSelector(".diff-container", { timeout: 5000 });
 
     // Assert
-    // Should show all three files
+    // Should show both files
     const diffContainers = page.locator(".diff-container");
     const containerCount = await diffContainers.count();
-    expect(containerCount).toBeGreaterThanOrEqual(1); // At least one file should be shown
+    expect(containerCount).toBe(2);
 
-    // Each file should have either a diff or "No changes" message
-    for (let i = 0; i < containerCount; i++) {
-      const container = diffContainers.nth(i);
-      const diffContent = container.locator(".diff-content");
-      await expect(diffContent).toBeVisible();
+    // package.json should have changes (NOT "No changes")
+    const pkgHeader = page.locator('.diff-header:has-text("package.json")');
+    await expect(pkgHeader).toBeVisible();
+    const pkgContainer = pkgHeader.locator("xpath=..");
+    const pkgNoChanges = pkgContainer.locator(".diff-content.no-changes");
+    expect(await pkgNoChanges.count()).toBe(0); // Should NOT have "No changes"
 
-      // Should have content (either diff or "No changes" message)
-      const content = await diffContent.textContent();
-      expect(content).toBeTruthy();
-      expect(content?.length).toBeGreaterThan(0);
-    }
+    // package.json should have additions or deletions
+    const pkgAdditions = pkgContainer.locator(".diff-content .addition");
+    const pkgDeletions = pkgContainer.locator(".diff-content .deletion");
+    const pkgChangeCount =
+      (await pkgAdditions.count()) + (await pkgDeletions.count());
+    expect(pkgChangeCount).toBeGreaterThan(0);
+
+    // LICENSE should show "No changes"
+    const licenseHeader = page.locator('.diff-header:has-text("LICENSE")');
+    await expect(licenseHeader).toBeVisible();
+    const licenseContainer = licenseHeader.locator("xpath=..");
+    const licenseNoChanges = licenseContainer.locator(
+      ".diff-content.no-changes",
+    );
+    expect(await licenseNoChanges.count()).toBe(1); // Should have "No changes"
+    await expect(licenseNoChanges).toContainText("No changes");
+
+    // LICENSE should NOT have additions or deletions
+    const licenseAdditions = licenseContainer.locator(
+      ".diff-content .addition",
+    );
+    const licenseDeletions = licenseContainer.locator(
+      ".diff-content .deletion",
+    );
+    expect(await licenseAdditions.count()).toBe(0);
+    expect(await licenseDeletions.count()).toBe(0);
   });
 });
