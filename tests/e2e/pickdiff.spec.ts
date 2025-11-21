@@ -1349,7 +1349,7 @@ test.describe("PickDiff Application", () => {
       await secondCheckbox.uncheck();
     } else {
       // Fail test if not enough files to test partial selection
-      test.fail(true, "Not enough files to test partial selection");
+      throw new Error("Not enough files to test partial selection");
     }
 
     // Submit the form to save selection to localStorage
@@ -1452,26 +1452,28 @@ test.describe("PickDiff Application", () => {
         response.url().includes("/api/files") && response.status() === 200,
     );
 
-    // Get two different commits
+    // Get the last two commits that touched package.json to guarantee a change exists
     const repoPath = path.join(__dirname, "../../");
-    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
-      cwd: repoPath,
-      encoding: "utf8",
-    })
+    const pkgCommitsRaw = execSync(
+      "git rev-list --max-count=2 HEAD -- package.json",
+      { cwd: repoPath, encoding: "utf8" },
+    )
       .trim()
       .split("\n");
 
-    if (commits.length < 2) {
-      throw new Error("Not enough commits to run this test");
+    if (pkgCommitsRaw.length < 2) {
+      throw new Error(
+        "Not enough commits modifying package.json to run deterministic diff test.",
+      );
     }
 
-    const [endCommit, startCommit] = commits;
+    const [endCommit, startCommit] = pkgCommitsRaw; // end = newer, start = older
 
     // Fill in different commits
     await page.fill("#start-commit", startCommit);
     await page.fill("#end-commit", endCommit);
 
-    // Select a file (package.json likely to have changes)
+    // Select package.json
     const packageCheckbox = page.locator(
       '#file-tree input.file-checkbox[value="package.json"]',
     );
@@ -1485,24 +1487,21 @@ test.describe("PickDiff Application", () => {
     await expect(page.locator(".diff-container")).toBeVisible();
 
     // Assert
-    // The diff should be displayed (either with changes or as "No changes")
-    const diffContent = page.locator(".diff-content");
-    await expect(diffContent).toBeVisible();
+    // The diff for package.json should be displayed
+    const pkgHeader = page.locator('.diff-header:has-text("package.json")');
+    await expect(pkgHeader).toBeVisible();
 
-    // If there were actual changes, should show additions or deletions
-    // If no changes, should show the "No changes" message
-    const noChangesMessage = page.locator(".diff-content.no-changes");
-    const hasNoChanges = (await noChangesMessage.count()) > 0;
+    // Ensure we did NOT get a "No changes" placeholder
+    const pkgContainer = pkgHeader.locator("xpath=.."); // parent .diff-container
+    const noChanges = pkgContainer.locator(".diff-content.no-changes");
+    expect(await noChanges.count()).toBe(0);
 
-    if (hasNoChanges) {
-      // If the file didn't change between commits, verify the message
-      await expect(noChangesMessage).toContainText("No changes");
-    } else {
-      // If the file did change, should show diff with additions/deletions or context
-      const diffLines = await diffContent.textContent();
-      expect(diffLines).toBeTruthy();
-      expect(diffLines?.length).toBeGreaterThan(0);
-    }
+    // Should have at least one addition or deletion line
+    const additions = pkgContainer.locator(".diff-content .addition");
+    const deletions = pkgContainer.locator(".diff-content .deletion");
+    const addCount = await additions.count();
+    const delCount = await deletions.count();
+    expect(addCount + delCount).toBeGreaterThan(0);
   });
 
   test("should handle multiple files with mixed changes and no changes", async ({
