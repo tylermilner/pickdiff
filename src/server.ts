@@ -2,6 +2,48 @@ import path from "node:path";
 import express, { type Express, type Request, type Response } from "express";
 import simpleGit, { type SimpleGit } from "simple-git";
 
+/**
+ * Strip git diff headers from diff output, keeping only the actual diff content.
+ * Removes lines like:
+ * - diff --git a/file b/file
+ * - index abc123..def456
+ * - --- a/file
+ * - +++ b/file
+ * - @@ -1,3 +1,4 @@
+ * @param diff The raw diff output from git
+ * @returns The diff content without headers
+ */
+function stripDiffHeaders(diff: string): string {
+  const lines = diff.split("\n");
+  const contentLines: string[] = [];
+  let inContent = false;
+
+  for (const line of lines) {
+    // Skip header lines
+    if (
+      line.startsWith("diff --git ") ||
+      line.startsWith("index ") ||
+      line.startsWith("--- ") ||
+      line.startsWith("+++ ")
+    ) {
+      continue;
+    }
+
+    // When we hit a hunk header (@@), mark that we're in content but skip the header itself
+    if (line.startsWith("@@ ")) {
+      inContent = true;
+      continue;
+    }
+
+    // Once we're in content, keep all lines
+    if (inContent) {
+      contentLines.push(line);
+    }
+  }
+
+  return contentLines.join("\n");
+}
+
 function createApp(git: SimpleGit, repoPath: string): Express {
   const app: Express = express();
   app.use(express.static(path.join(__dirname, "..", "public")));
@@ -53,6 +95,9 @@ function createApp(git: SimpleGit, repoPath: string): Express {
           "--",
           file,
         ]);
+
+        // Strip git diff headers from the output
+        diff = stripDiffHeaders(diff);
 
         if (!diff) {
           // If diff is empty, check if file exists in start commit
@@ -142,4 +187,4 @@ if (require.main === module) {
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
-export { createApp };
+export { createApp, stripDiffHeaders };
