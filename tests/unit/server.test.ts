@@ -99,6 +99,21 @@ describe("PickDiff Server API", () => {
       // Assert
       expect(response.body).toHaveProperty("error", "Failed to list files");
     });
+
+    it("should return empty list when repo has no tracked files", async () => {
+      // Arrange
+      mockGit.raw.mockResolvedValue("");
+
+      // Act
+      const response = await request(app)
+        .get("/api/files")
+        .expect("Content-Type", /json/)
+        .expect(200);
+
+      // Assert
+      expect(response.body).toEqual([]);
+      expect(mockGit.raw).toHaveBeenCalledWith(["ls-files"]);
+    });
   });
 
   describe("POST /api/diff", () => {
@@ -273,6 +288,40 @@ describe("PickDiff Server API", () => {
 
       // Assert
       expect(response.body).toHaveProperty("error", "Failed to get diffs");
+    });
+
+    it("should return empty diffs and excludedFiles for empty files array", async () => {
+      // Arrange
+      mockGit.raw.mockResolvedValue("");
+      mockGit.diff.mockResolvedValue("");
+
+      // Act
+      const response = await request(app)
+        .post("/api/diff")
+        .send({ startCommit: "a", endCommit: "b", files: [] })
+        .expect(200);
+
+      // Assert
+      expect(response.body).toEqual({ diffs: {}, excludedFiles: [] });
+      expect(mockGit.diff).not.toHaveBeenCalled();
+    });
+
+    it("should treat new empty file as '+'", async () => {
+      // Arrange: new file -> empty diff, and empty file content
+      mockGit.raw.mockResolvedValue(""); // cat-file check passes
+      mockGit.diff.mockResolvedValue(""); // empty diff indicates new/unchanged
+      mockGit.show.mockResolvedValue(""); // empty file content
+
+      // Act
+      const response = await request(app)
+        .post("/api/diff")
+        .send({ startCommit: "a", endCommit: "b", files: ["empty.txt"] })
+        .expect(200);
+
+      // Assert
+      expect(response.body.diffs["empty.txt"]).toBe("+");
+      expect(response.body.excludedFiles).toEqual([]);
+      expect(mockGit.show).toHaveBeenCalledWith(["b:empty.txt"]);
     });
 
     it("should skip files that don't exist in end commit", async () => {
