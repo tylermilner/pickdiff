@@ -585,7 +585,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const content = document.createElement("div");
       content.className = "diff-content";
-      content.innerHTML = formatDiff(diffs[file]);
+
+      // Check if this file has no changes
+      if (diffs[file] === "NO_CHANGES") {
+        content.className = "diff-content no-changes";
+        content.innerHTML =
+          '<p class="text-muted mb-0"><em>No changes</em></p>';
+      } else {
+        content.innerHTML = formatDiff(diffs[file]);
+      }
 
       diffContainer.appendChild(header);
       diffContainer.appendChild(content);

@@ -1349,7 +1349,7 @@ test.describe("PickDiff Application", () => {
       await secondCheckbox.uncheck();
     } else {
       // Fail test if not enough files to test partial selection
-      test.fail(true, "Not enough files to test partial selection");
+      throw new Error("Not enough files to test partial selection");
     }
 
     // Submit the form to save selection to localStorage
@@ -1382,5 +1382,230 @@ test.describe("PickDiff Application", () => {
 
     // Also check it is not checked (since it is partial selection)
     await expect(selectAllCheckbox).not.toBeChecked();
+  });
+
+  test("should display 'No changes' message for unchanged files", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get the current commit (HEAD)
+    const repoPath = path.join(__dirname, "../../");
+    const currentCommit: string = execSync(
+      'git log --oneline -1 --format="%H"',
+      {
+        cwd: repoPath,
+        encoding: "utf8",
+      },
+    ).trim();
+
+    // Fill in the same commit for both start and end (no changes scenario)
+    await page.fill("#start-commit", currentCommit);
+    await page.fill("#end-commit", currentCommit);
+
+    // Select a file that exists in this commit (e.g., README.md)
+    const readmeCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="README.md"]',
+    );
+    await readmeCheckbox.check();
+
+    // Act
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Assert
+    // Should show the file name in the header
+    const diffHeader = page.locator('.diff-header:has-text("README.md")');
+    await expect(diffHeader).toBeVisible();
+
+    // Should show "No changes" message instead of diff content
+    const noChangesMessage = page.locator(".diff-content.no-changes");
+    await expect(noChangesMessage).toBeVisible();
+    await expect(noChangesMessage).toContainText("No changes");
+
+    // Should NOT show any additions or deletions (green/red lines)
+    const additions = page.locator(".diff-content .addition");
+    const deletions = page.locator(".diff-content .deletion");
+    expect(await additions.count()).toBe(0);
+    expect(await deletions.count()).toBe(0);
+  });
+
+  test("should display actual diff for changed files, not 'No changes'", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get the last two commits that touched package.json to guarantee a change exists
+    const repoPath = path.join(__dirname, "../../");
+    const pkgCommitsRaw = execSync(
+      "git rev-list --max-count=2 HEAD -- package.json",
+      { cwd: repoPath, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n");
+
+    if (pkgCommitsRaw.length < 2) {
+      throw new Error(
+        "Not enough commits modifying package.json to run deterministic diff test.",
+      );
+    }
+
+    const [endCommit, startCommit] = pkgCommitsRaw; // end = newer, start = older
+
+    // Fill in different commits
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select package.json
+    const packageCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="package.json"]',
+    );
+    await packageCheckbox.check();
+
+    // Act
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Assert
+    // The diff for package.json should be displayed
+    const pkgHeader = page.locator('.diff-header:has-text("package.json")');
+    await expect(pkgHeader).toBeVisible();
+
+    // Ensure we did NOT get a "No changes" placeholder
+    const pkgContainer = pkgHeader.locator("xpath=.."); // parent .diff-container
+    const noChanges = pkgContainer.locator(".diff-content.no-changes");
+    expect(await noChanges.count()).toBe(0);
+
+    // Should have at least one addition or deletion line
+    const additions = pkgContainer.locator(".diff-content .addition");
+    const deletions = pkgContainer.locator(".diff-content .deletion");
+    const addCount = await additions.count();
+    const delCount = await deletions.count();
+    expect(addCount + delCount).toBeGreaterThan(0);
+  });
+
+  test("should handle multiple files with mixed changes and no changes", async ({
+    page,
+  }) => {
+    // Arrange
+    // Get the last two commits that touched package.json (guarantees package.json changed)
+    const repoPath = path.join(__dirname, "../../");
+    const pkgCommitsRaw = execSync(
+      "git rev-list --max-count=2 HEAD -- package.json",
+      { cwd: repoPath, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n");
+
+    if (pkgCommitsRaw.length < 2) {
+      throw new Error(
+        "Not enough commits modifying package.json to run this test.",
+      );
+    }
+
+    const [endCommit, startCommit] = pkgCommitsRaw; // end = newer, start = older
+
+    // Check if LICENSE changed between these commits (it shouldn't have in most cases)
+    const licenseDiff = execSync(
+      `git diff ${startCommit}..${endCommit} -- LICENSE`,
+      { cwd: repoPath, encoding: "utf8" },
+    ).trim();
+
+    if (licenseDiff) {
+      throw new Error(
+        "LICENSE changed between the same commits where package.json changed. " +
+          "This test assumes LICENSE remains unchanged. Please update the test to use different files.",
+      );
+    }
+
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Fill in commits where package.json changed but LICENSE didn't
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select both files
+    const packageCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="package.json"]',
+    );
+    const licenseCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="LICENSE"]',
+    );
+
+    await packageCheckbox.check();
+    await licenseCheckbox.check();
+
+    // Act
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diffs to be displayed
+    await page.waitForSelector(".diff-container", { timeout: 5000 });
+
+    // Assert
+    // Should show both files
+    const diffContainers = page.locator(".diff-container");
+    const containerCount = await diffContainers.count();
+    expect(containerCount).toBe(2);
+
+    // package.json should have changes (NOT "No changes")
+    const pkgHeader = page.locator('.diff-header:has-text("package.json")');
+    await expect(pkgHeader).toBeVisible();
+    const pkgContainer = pkgHeader.locator("xpath=..");
+    const pkgNoChanges = pkgContainer.locator(".diff-content.no-changes");
+    expect(await pkgNoChanges.count()).toBe(0); // Should NOT have "No changes"
+
+    // package.json should have additions or deletions
+    const pkgAdditions = pkgContainer.locator(".diff-content .addition");
+    const pkgDeletions = pkgContainer.locator(".diff-content .deletion");
+    const pkgChangeCount =
+      (await pkgAdditions.count()) + (await pkgDeletions.count());
+    expect(pkgChangeCount).toBeGreaterThan(0);
+
+    // LICENSE should show "No changes"
+    const licenseHeader = page.locator('.diff-header:has-text("LICENSE")');
+    await expect(licenseHeader).toBeVisible();
+    const licenseContainer = licenseHeader.locator("xpath=..");
+    const licenseNoChanges = licenseContainer.locator(
+      ".diff-content.no-changes",
+    );
+    expect(await licenseNoChanges.count()).toBe(1); // Should have "No changes"
+    await expect(licenseNoChanges).toContainText("No changes");
+
+    // LICENSE should NOT have additions or deletions
+    const licenseAdditions = licenseContainer.locator(
+      ".diff-content .addition",
+    );
+    const licenseDeletions = licenseContainer.locator(
+      ".diff-content .deletion",
+    );
+    expect(await licenseAdditions.count()).toBe(0);
+    expect(await licenseDeletions.count()).toBe(0);
   });
 });
