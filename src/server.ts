@@ -28,17 +28,10 @@ function stripDiffHeaders(diff: string): string {
     // Once we're in content, keep all lines
     if (inContent) {
       contentLines.push(line);
-      continue;
     }
 
-    // Before we're in content, skip header lines
-    if (
-      line.startsWith("diff --git ") ||
-      line.startsWith("index ") ||
-      line.startsWith("--- ") ||
-      line.startsWith("+++ ")
-    ) {
-    }
+    // Before we're in content, skip header lines (we implicitly skip by not adding them to contentLines)
+    // These are lines like: diff --git, index, ---, +++
   }
 
   return contentLines.join("\n");
