@@ -1681,7 +1681,8 @@ test.describe("PickDiff Application", () => {
 
     // Verify that syntax highlighting HTML elements are present
     // Highlight.js adds <span> elements with hljs-* classes
-    const diffContent = page.locator(".diff-content").first();
+    const tsContainer = diffHeader.locator("xpath=.."); // parent .diff-container
+    const diffContent = tsContainer.locator(".diff-content");
 
     // Check that the diff has content
     const content = await diffContent.textContent();
@@ -1690,8 +1691,8 @@ test.describe("PickDiff Application", () => {
 
     // Verify that diff markers are preserved
     // Should have either additions or deletions (or both)
-    const additions = page.locator(".diff-content .addition");
-    const deletions = page.locator(".diff-content .deletion");
+    const additions = tsContainer.locator(".diff-content .addition");
+    const deletions = tsContainer.locator(".diff-content .deletion");
     const totalChanges = (await additions.count()) + (await deletions.count());
     expect(totalChanges).toBeGreaterThan(0);
 
@@ -1702,5 +1703,29 @@ test.describe("PickDiff Application", () => {
     // Should have a background color set (green-ish for additions)
     expect(additionBgColor).toBeTruthy();
     expect(additionBgColor).not.toBe("rgba(0, 0, 0, 0)"); // Not transparent
+
+    // Wait for Highlight.js token classes to appear (applied asynchronously)
+    await page.waitForSelector(
+      ".diff-content .hljs-keyword, .diff-content .hljs-string, .diff-content .hljs-comment, .diff-content .hljs-number, .diff-content .hljs-title, .diff-content .hljs-function, .diff-content .hljs-params",
+      { timeout: 3000 },
+    );
+
+    // Verify Highlight.js token classes are present in the diff content
+    const syntaxTokens = page.locator(
+      ".diff-content .hljs-keyword, .diff-content .hljs-string, .diff-content .hljs-comment, .diff-content .hljs-number, .diff-content .hljs-title, .diff-content .hljs-function, .diff-content .hljs-params",
+    );
+    expect(await syntaxTokens.count()).toBeGreaterThan(0);
+
+    // Ensure at least one highlighted token is inside an added or deleted line
+    const tokenInChangedLine = page.locator(
+      ".addition .hljs-keyword, .addition .hljs-string, .addition .hljs-comment, .addition .hljs-number, .deletion .hljs-keyword, .deletion .hljs-string, .deletion .hljs-comment, .deletion .hljs-number",
+    );
+    expect(await tokenInChangedLine.count()).toBeGreaterThan(0);
+
+    // Optional: Verify the token has a visible color (not transparent)
+    const tokenColor = await syntaxTokens.first().evaluate((el) => {
+      return window.getComputedStyle(el).color;
+    });
+    expect(tokenColor).toBeTruthy();
   });
 });
