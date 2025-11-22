@@ -1651,8 +1651,7 @@ test.describe("PickDiff Application", () => {
 
     if (tsCommitsRaw.length < 2) {
       // Skip test if not enough commits
-      console.log("Skipping syntax highlighting test - not enough commits");
-      return;
+      throw new Error("Skipping syntax highlighting test - not enough commits");
     }
 
     const [endCommit, startCommit] = tsCommitsRaw;
