@@ -8,6 +8,12 @@ interface DiffResponse {
 
 type FileTreeNode = { [name: string]: FileTreeNode } & { isFile?: boolean };
 
+// Declare hljs from Highlight.js library loaded via CDN
+declare const hljs: {
+  highlight: (code: string, options: { language: string }) => { value: string };
+  highlightAuto: (code: string) => { value: string };
+};
+
 document.addEventListener("DOMContentLoaded", () => {
   const repoPathSpan = document.getElementById(
     "repo-path",
@@ -592,7 +598,7 @@ document.addEventListener("DOMContentLoaded", () => {
         content.innerHTML =
           '<p class="text-muted mb-0"><em>No changes</em></p>';
       } else {
-        content.innerHTML = formatDiff(diffs[file]);
+        content.innerHTML = formatDiff(diffs[file], file);
       }
 
       diffContainer.appendChild(header);
@@ -649,17 +655,103 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/'/g, "&#039;");
   }
 
-  function formatDiff(diff: string): string {
+  /**
+   * Get the language for syntax highlighting based on file extension
+   */
+  function getLanguageFromFilename(filename: string): string | null {
+    const extension = filename.split(".").pop()?.toLowerCase();
+    const languageMap: { [key: string]: string } = {
+      js: "javascript",
+      jsx: "javascript",
+      ts: "typescript",
+      tsx: "typescript",
+      py: "python",
+      rb: "ruby",
+      java: "java",
+      c: "c",
+      cpp: "cpp",
+      cc: "cpp",
+      cxx: "cpp",
+      h: "c",
+      hpp: "cpp",
+      cs: "csharp",
+      go: "go",
+      rs: "rust",
+      php: "php",
+      swift: "swift",
+      kt: "kotlin",
+      scala: "scala",
+      html: "html",
+      htm: "html",
+      xml: "xml",
+      css: "css",
+      scss: "scss",
+      sass: "sass",
+      less: "less",
+      json: "json",
+      yaml: "yaml",
+      yml: "yaml",
+      md: "markdown",
+      sh: "bash",
+      bash: "bash",
+      zsh: "bash",
+      sql: "sql",
+      r: "r",
+      m: "objectivec",
+      mm: "objectivec",
+    };
+
+    return extension ? languageMap[extension] || null : null;
+  }
+
+  /**
+   * Apply syntax highlighting to a line of code
+   */
+  function highlightLine(line: string, language: string | null): string {
+    if (!line || line.length === 0) {
+      return line;
+    }
+
+    // Remove the diff marker (+, -, or space) if present
+    let diffMarker = "";
+    let codeContent = line;
+
+    if (line.startsWith("+") || line.startsWith("-") || line.startsWith(" ")) {
+      diffMarker = line[0];
+      codeContent = line.substring(1);
+    }
+
+    // Apply syntax highlighting to the code content
+    let highlightedCode = codeContent;
+    if (language && typeof hljs !== "undefined") {
+      try {
+        highlightedCode = hljs.highlight(codeContent, { language }).value;
+      } catch (_e) {
+        // If highlighting fails, fall back to the original content
+        highlightedCode = escapeHtml(codeContent);
+      }
+    } else {
+      highlightedCode = escapeHtml(codeContent);
+    }
+
+    // Return with the diff marker preserved
+    return diffMarker + highlightedCode;
+  }
+
+  function formatDiff(diff: string, filename: string): string {
+    const language = getLanguageFromFilename(filename);
+
     return diff
       .split("\n")
       .map((line) => {
-        const escapedLine = escapeHtml(line);
+        const highlightedLine = highlightLine(line, language);
+
         if (line.startsWith("+")) {
-          return `<span class="addition">${escapedLine}</span>`;
+          return `<span class="addition">${highlightedLine}</span>`;
         } else if (line.startsWith("-")) {
-          return `<span class="deletion">${escapedLine}</span>`;
+          return `<span class="deletion">${highlightedLine}</span>`;
         }
-        return escapedLine;
+        return highlightedLine;
       })
       .join("\n");
   }
