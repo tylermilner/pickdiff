@@ -58,6 +58,7 @@
   border: 1px solid #ddd;
   padding: 10px;
   border-radius: 5px;
+  background-color: #ffffff;
 }
 
 .diff-content.no-changes {
@@ -68,13 +69,36 @@
 }
 
 .diff-content .addition {
-  color: green;
-  background-color: #dfd;
+  background-color: #e6ffec;
+  border-left: 3px solid #28a745;
+  padding-left: 5px;
+  display: inline;
 }
 
 .diff-content .deletion {
-  color: red;
-  background-color: #fdd;
+  background-color: #ffebe9;
+  border-left: 3px solid #dc3545;
+  padding-left: 5px;
+  display: inline;
+}
+
+/* Ensure syntax highlighting tokens are visible on diff backgrounds */
+.diff-content .hljs-keyword,
+.diff-content .hljs-selector-tag,
+.diff-content .hljs-literal,
+.diff-content .hljs-section,
+.diff-content .hljs-link {
+  font-weight: bold;
+}
+
+.diff-content .hljs-deletion {
+  /* Override hljs deletion style to use our diff deletion */
+  background-color: transparent;
+}
+
+.diff-content .hljs-addition {
+  /* Override hljs addition style to use our diff addition */
+  background-color: transparent;
 }
 
 #selected-files-container {
