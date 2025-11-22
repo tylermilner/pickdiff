@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import type { SimpleGit } from "simple-git";
 import request from "supertest";
-import { createApp } from "../../src/server";
+import { createApp, stripDiffHeaders } from "../../src/server";
 
 interface MockGit {
   raw: jest.Mock;
@@ -114,10 +114,25 @@ describe("PickDiff Server API", () => {
       mockGit.diff.mockImplementation((...args: unknown[]) => {
         const argsArray = args.flat();
         if (argsArray.includes("file1.js")) {
-          return Promise.resolve("-old line\n+new line");
+          return Promise.resolve(
+            `diff --git a/file1.js b/file1.js
+index abc123..def456 100644
+--- a/file1.js
++++ b/file1.js
+@@ -1,2 +1,2 @@
+-old line
++new line`,
+          );
         }
         if (argsArray.includes("file2.js")) {
-          return Promise.resolve("+added line");
+          return Promise.resolve(
+            `diff --git a/file2.js b/file2.js
+index 123456..789abc 100644
+--- a/file2.js
++++ b/file2.js
+@@ -1 +1,2 @@
++added line`,
+          );
         }
         return Promise.resolve("");
       });
@@ -341,7 +356,15 @@ describe("PickDiff Server API", () => {
         return Promise.resolve("");
       });
 
-      mockGit.diff.mockResolvedValue("-old line\n+new line");
+      mockGit.diff.mockResolvedValue(
+        `diff --git a/file1.js b/file1.js
+index abc123..def456 100644
+--- a/file1.js
++++ b/file1.js
+@@ -1,2 +1,2 @@
+-old line
++new line`,
+      );
 
       // Act
       const response = await request(app)
@@ -384,6 +407,132 @@ describe("PickDiff Server API", () => {
         "nonexistent2.js",
       ]);
       expect(Object.keys(response.body.diffs)).toHaveLength(0);
+    });
+  });
+
+  describe("stripDiffHeaders", () => {
+    it("should strip standard git diff headers", () => {
+      // Arrange
+      const diff = `diff --git a/.gitignore b/.gitignore
+index 3c3629e..85b42f0 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1 +1,9 @@
+ node_modules
++
++# Test coverage and reports
++coverage/
++playwright-report/
++test-results/`;
+
+      // Act
+      const result = stripDiffHeaders(diff);
+
+      // Assert
+      const expected = ` node_modules
++
++# Test coverage and reports
++coverage/
++playwright-report/
++test-results/`;
+      expect(result).toBe(expected);
+    });
+
+    it("should handle diffs with multiple hunks", () => {
+      // Arrange
+      const diff = `diff --git a/file.txt b/file.txt
+index abc123..def456 100644
+--- a/file.txt
++++ b/file.txt
+@@ -1,3 +1,4 @@
+ line1
++line2
+ line3
+@@ -10,2 +11,3 @@
+ another line
++new line
+ final line`;
+
+      // Act
+      const result = stripDiffHeaders(diff);
+
+      // Assert
+      const expected = ` line1
++line2
+ line3
+ another line
++new line
+ final line`;
+      expect(result).toBe(expected);
+    });
+
+    it("should handle empty diff", () => {
+      // Arrange
+      const diff = "";
+
+      // Act
+      const result = stripDiffHeaders(diff);
+
+      // Assert
+      expect(result).toBe("");
+    });
+
+    it("should handle diff with only headers and no content", () => {
+      // Arrange
+      const diff = `diff --git a/file.txt b/file.txt
+index abc123..def456 100644
+--- a/file.txt
++++ b/file.txt`;
+
+      // Act
+      const result = stripDiffHeaders(diff);
+
+      // Assert
+      expect(result).toBe("");
+    });
+
+    it("should preserve deletion and addition markers", () => {
+      // Arrange
+      const diff = `diff --git a/test.js b/test.js
+index 123..456 100644
+--- a/test.js
++++ b/test.js
+@@ -1,2 +1,2 @@
+-old line
++new line
+ context line`;
+
+      // Act
+      const result = stripDiffHeaders(diff);
+
+      // Assert
+      const expected = `-old line
++new line
+ context line`;
+      expect(result).toBe(expected);
+    });
+
+    it("should handle lines that start with diff/index/---/+++ in content", () => {
+      // Arrange - edge case where actual content might have these patterns
+      const diff = `diff --git a/file.txt b/file.txt
+index abc123..def456 100644
+--- a/file.txt
++++ b/file.txt
+@@ -1,3 +1,3 @@
+ some content
+-index variable = 5
++index variable = 10
+ more content`;
+
+      // Act
+      const result = stripDiffHeaders(diff);
+
+      // Assert
+      const expected = ` some content
+-index variable = 5
++index variable = 10
+ more content`;
+      expect(result).toBe(expected);
     });
   });
 });
