@@ -1,8 +1,15 @@
 interface RepoPathResponse {
   path: string;
 }
+
+interface DiffLine {
+  content: string;
+  oldLineNumber?: number;
+  newLineNumber?: number;
+}
+
 interface DiffResponse {
-  diffs: { [file: string]: string };
+  diffs: { [file: string]: DiffLine[] };
   excludedFiles: string[];
 }
 
@@ -562,7 +569,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function displayDiffs(
-    diffs: { [file: string]: string },
+    diffs: { [file: string]: DiffLine[] },
     excludedFiles: string[],
   ): void {
     if (diffSummary) diffSummary.innerHTML = "";
@@ -593,7 +600,7 @@ document.addEventListener("DOMContentLoaded", () => {
       content.className = "diff-content";
 
       // Check if this file has no changes
-      if (diffs[file] === "NO_CHANGES") {
+      if (diffs[file].length === 1 && diffs[file][0].content === "NO_CHANGES") {
         content.className = "diff-content no-changes";
         content.innerHTML =
           '<p class="text-muted mb-0"><em>No changes</em></p>';
@@ -738,20 +745,27 @@ document.addEventListener("DOMContentLoaded", () => {
     return diffMarker + highlightedCode;
   }
 
-  function formatDiff(diff: string, filename: string): string {
+  function formatDiff(diffLines: DiffLine[], filename: string): string {
     const language = getLanguageFromFilename(filename);
 
-    return diff
-      .split("\n")
-      .map((line) => {
+    return diffLines
+      .map((diffLine) => {
+        const line = diffLine.content;
         const highlightedLine = highlightLine(line, language);
 
+        // Format line numbers
+        const oldNum =
+          diffLine.oldLineNumber?.toString().padStart(4, " ") || "    ";
+        const newNum =
+          diffLine.newLineNumber?.toString().padStart(4, " ") || "    ";
+        const lineNumbers = `<span class="line-number">${escapeHtml(oldNum)} ${escapeHtml(newNum)}</span>`;
+
         if (line.startsWith("+")) {
-          return `<span class="addition">${highlightedLine}</span>`;
+          return `${lineNumbers}<span class="addition">${highlightedLine}</span>`;
         } else if (line.startsWith("-")) {
-          return `<span class="deletion">${highlightedLine}</span>`;
+          return `${lineNumbers}<span class="deletion">${highlightedLine}</span>`;
         }
-        return highlightedLine;
+        return `${lineNumbers}${highlightedLine}`;
       })
       .join("\n");
   }
