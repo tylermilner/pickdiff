@@ -1608,4 +1608,124 @@ test.describe("PickDiff Application", () => {
     expect(await licenseAdditions.count()).toBe(0);
     expect(await licenseDeletions.count()).toBe(0);
   });
+
+  test("should load Highlight.js library for syntax highlighting", async ({
+    page,
+  }) => {
+    // Arrange & Act
+    await page.goto("/");
+
+    // Assert - Check that Highlight.js is loaded
+    const hljsExists = await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: Window object needs type assertion for external library
+      return typeof (window as any).hljs !== "undefined";
+    });
+    expect(hljsExists).toBe(true);
+
+    // Verify hljs has the highlight function
+    const hljsHasHighlight = await page.evaluate(() => {
+      // biome-ignore lint/suspicious/noExplicitAny: Window object needs type assertion for external library
+      return typeof (window as any).hljs?.highlight === "function";
+    });
+    expect(hljsHasHighlight).toBe(true);
+  });
+
+  test("should apply syntax highlighting to diff output", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get two commits that modified a TypeScript or JavaScript file
+    const repoPath = path.join(__dirname, "../../");
+    const tsCommitsRaw = execSync(
+      "git rev-list --max-count=2 HEAD -- frontend/script.ts",
+      { cwd: repoPath, encoding: "utf8" },
+    )
+      .trim()
+      .split("\n");
+
+    if (tsCommitsRaw.length < 2) {
+      // Skip test if not enough commits
+      throw new Error("Skipping syntax highlighting test - not enough commits");
+    }
+
+    const [endCommit, startCommit] = tsCommitsRaw;
+
+    // Fill in commits
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select frontend/script.ts
+    const tsCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="frontend/script.ts"]',
+    );
+    await tsCheckbox.check();
+
+    // Act
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await page.waitForSelector(".diff-container", { timeout: 5000 });
+
+    // Assert
+    // Check that the diff container exists
+    const diffHeader = page.locator(
+      '.diff-header:has-text("frontend/script.ts")',
+    );
+    await expect(diffHeader).toBeVisible();
+
+    // Verify that syntax highlighting HTML elements are present
+    // Highlight.js adds <span> elements with hljs-* classes
+    const tsContainer = diffHeader.locator("xpath=.."); // parent .diff-container
+    const diffContent = tsContainer.locator(".diff-content");
+
+    // Check that the diff has content
+    const content = await diffContent.textContent();
+    expect(content).toBeTruthy();
+    expect(content?.length).toBeGreaterThan(0);
+
+    // Verify that diff markers are preserved
+    // Should have either additions or deletions (or both)
+    const additions = tsContainer.locator(".diff-content .addition");
+    const deletions = tsContainer.locator(".diff-content .deletion");
+    const totalChanges = (await additions.count()) + (await deletions.count());
+    expect(totalChanges).toBeGreaterThan(0);
+
+    // Verify the CSS styling is applied
+    const additionBgColor = await additions.first().evaluate((el) => {
+      return window.getComputedStyle(el).backgroundColor;
+    });
+    // Should have a background color set (green-ish for additions)
+    expect(additionBgColor).toBeTruthy();
+    expect(additionBgColor).not.toBe("rgba(0, 0, 0, 0)"); // Not transparent
+
+    // Wait for Highlight.js token classes to appear (applied asynchronously)
+    await page.waitForSelector(
+      ".diff-content .hljs-keyword, .diff-content .hljs-string, .diff-content .hljs-comment, .diff-content .hljs-number, .diff-content .hljs-title, .diff-content .hljs-function, .diff-content .hljs-params",
+      { timeout: 3000 },
+    );
+
+    // Verify Highlight.js token classes are present in the diff content
+    const syntaxTokens = page.locator(
+      ".diff-content .hljs-keyword, .diff-content .hljs-string, .diff-content .hljs-comment, .diff-content .hljs-number, .diff-content .hljs-title, .diff-content .hljs-function, .diff-content .hljs-params",
+    );
+    expect(await syntaxTokens.count()).toBeGreaterThan(0);
+
+    // Ensure at least one highlighted token is inside an added or deleted line
+    const tokenInChangedLine = page.locator(
+      ".addition .hljs-keyword, .addition .hljs-string, .addition .hljs-comment, .addition .hljs-number, .deletion .hljs-keyword, .deletion .hljs-string, .deletion .hljs-comment, .deletion .hljs-number",
+    );
+    expect(await tokenInChangedLine.count()).toBeGreaterThan(0);
+
+    // Optional: Verify the token has a visible color (not transparent)
+    const tokenColor = await syntaxTokens.first().evaluate((el) => {
+      return window.getComputedStyle(el).color;
+    });
+    expect(tokenColor).toBeTruthy();
+  });
 });
