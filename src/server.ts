@@ -38,6 +38,11 @@ function parseDiffWithLineNumbers(diff: string): DiffLine[] {
       continue;
     }
 
+    // Skip empty lines (e.g., from trailing newline in git output)
+    if (!line) {
+      continue;
+    }
+
     // Process content lines
     if (line.startsWith("+")) {
       // Addition: only has new line number
