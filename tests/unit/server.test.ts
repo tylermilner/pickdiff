@@ -145,8 +145,13 @@ index 123456..789abc 100644
         .expect(200);
 
       // Assert
-      expect(response.body.diffs["file1.js"]).toBe("-old line\n+new line");
-      expect(response.body.diffs["file2.js"]).toBe("+added line");
+      expect(response.body.diffs["file1.js"]).toEqual([
+        { content: "-old line", oldLineNumber: 1 },
+        { content: "+new line", newLineNumber: 1 },
+      ]);
+      expect(response.body.diffs["file2.js"]).toEqual([
+        { content: "+added line", newLineNumber: 1 },
+      ]);
       expect(response.body.excludedFiles).toEqual([]);
       expect(mockGit.diff).toHaveBeenCalledTimes(2);
     });
@@ -179,7 +184,11 @@ index 123456..789abc 100644
         .expect(200);
 
       // Assert
-      expect(response.body.diffs["newfile.js"]).toBe("+line1\n+line2\n+line3");
+      expect(response.body.diffs["newfile.js"]).toEqual([
+        { content: "+line1", newLineNumber: 1 },
+        { content: "+line2", newLineNumber: 2 },
+        { content: "+line3", newLineNumber: 3 },
+      ]);
       expect(response.body.excludedFiles).toEqual([]);
       expect(mockGit.show).toHaveBeenCalledWith(["def456:newfile.js"]);
     });
@@ -200,7 +209,9 @@ index 123456..789abc 100644
         .expect(200);
 
       // Assert
-      expect(response.body.diffs["unchanged.js"]).toBe("NO_CHANGES");
+      expect(response.body.diffs["unchanged.js"]).toEqual([
+        { content: "NO_CHANGES" },
+      ]);
       expect(response.body.excludedFiles).toEqual([]);
       expect(mockGit.show).not.toHaveBeenCalled();
     });
@@ -379,7 +390,10 @@ index abc123..def456 100644
 
       // Assert
       // Only file1.js should be in the response, file2.js should be skipped
-      expect(response.body.diffs["file1.js"]).toBe("-old line\n+new line");
+      expect(response.body.diffs["file1.js"]).toEqual([
+        { content: "-old line", oldLineNumber: 1 },
+        { content: "+new line", newLineNumber: 1 },
+      ]);
       expect(response.body.diffs["file2.js"]).toBeUndefined();
       expect(response.body.excludedFiles).toEqual(["file2.js"]);
       expect(Object.keys(response.body.diffs)).toHaveLength(1);
