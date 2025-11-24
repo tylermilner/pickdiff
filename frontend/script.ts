@@ -58,6 +58,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const toggleSelectedFilesButton = document.getElementById(
     "toggle-selected-files",
   ) as HTMLButtonElement | null;
+  const contextLinesSelect = document.getElementById(
+    "context-lines",
+  ) as HTMLSelectElement | null;
 
   if (
     !repoPathSpan ||
@@ -71,7 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
     !selectedFilesContainer ||
     !selectedFilesList ||
     !selectedCountSpan ||
-    !toggleSelectedFilesButton
+    !toggleSelectedFilesButton ||
+    !contextLinesSelect
   ) {
     console.error("Missing required DOM elements.");
     return;
@@ -243,6 +247,13 @@ document.addEventListener("DOMContentLoaded", () => {
       endCommitInput.value = savedEndCommit;
     }
 
+    // Load saved context lines, default to 3 if not set
+    const savedContextLines =
+      localStorage.getItem(`contextLines_${repoPath}`) || "3";
+    if (contextLinesSelect) {
+      contextLinesSelect.value = savedContextLines;
+    }
+
     // Fetch files and build the file tree
     fetch("/api/files")
       .then<string[]>((response) => response.json())
@@ -294,6 +305,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const startCommit = startCommitInput.value.trim();
     const endCommit = endCommitInput.value.trim();
     const selectedFiles = getSelectedFiles();
+    const contextLines = Number.parseInt(contextLinesSelect.value, 10);
 
     if (!startCommit || !endCommit || selectedFiles.length === 0) {
       alert("Please fill in all fields and select at least one file.");
@@ -304,7 +316,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const response = await fetch("/api/diff", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startCommit, endCommit, files: selectedFiles }),
+        body: JSON.stringify({
+          startCommit,
+          endCommit,
+          files: selectedFiles,
+          contextLines,
+        }),
       });
 
       if (!response.ok) {
@@ -322,6 +339,7 @@ document.addEventListener("DOMContentLoaded", () => {
         `selectedFiles_${repoPath}`,
         JSON.stringify(selectedFiles),
       );
+      localStorage.setItem(`contextLines_${repoPath}`, contextLines.toString());
     } catch (error: unknown) {
       console.error("Error fetching diff:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
