@@ -29,6 +29,9 @@ function parseDiffWithLineNumbers(diff: string): DiffLine[] {
       if (match) {
         oldLineNumber = Number.parseInt(match[1], 10);
         newLineNumber = Number.parseInt(match[2], 10);
+      } else {
+        // Log warning for malformed hunk header
+        console.warn(`Failed to parse hunk header: ${line}`);
       }
       continue;
     }
@@ -85,8 +88,20 @@ function parseDiffWithLineNumbers(diff: string): DiffLine[] {
  * @returns The diff content without headers (only the actual +/- lines and context)
  */
 function stripDiffHeaders(diff: string): string {
-  const diffLines = parseDiffWithLineNumbers(diff);
-  return diffLines.map((line) => line.content).join("\n");
+  const lines = diff.split("\n");
+  let inContent = false;
+  const contentLines: string[] = [];
+  for (const line of lines) {
+    if (!inContent) {
+      if (line.startsWith("@@ ")) {
+        inContent = true;
+        continue; // skip hunk header itself
+      }
+      continue; // skip header lines
+    }
+    contentLines.push(line);
+  }
+  return contentLines.join("\n");
 }
 
 function createApp(git: SimpleGit, repoPath: string): Express {
