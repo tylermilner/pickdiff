@@ -591,6 +591,72 @@ index abc123..def456 100644
         "file1.js",
       ]);
     });
+
+    it("should default to 3 when contextLines is a float", async () => {
+      // Arrange
+      mockGit.raw.mockResolvedValue(""); // cat-file check passes
+      mockGit.diff.mockResolvedValue(
+        `diff --git a/file1.js b/file1.js
+index abc123..def456 100644
+--- a/file1.js
++++ b/file1.js
+@@ -1,2 +1,2 @@
+-old line
++new line`,
+      );
+
+      // Act
+      const _response = await request(app)
+        .post("/api/diff")
+        .send({
+          startCommit: "abc123",
+          endCommit: "def456",
+          files: ["file1.js"],
+          contextLines: 5.5,
+        })
+        .expect(200);
+
+      // Assert
+      expect(mockGit.diff).toHaveBeenCalledWith([
+        "abc123..def456",
+        "-U3",
+        "--",
+        "file1.js",
+      ]);
+    });
+
+    it("should default to 3 when contextLines exceeds maximum", async () => {
+      // Arrange
+      mockGit.raw.mockResolvedValue(""); // cat-file check passes
+      mockGit.diff.mockResolvedValue(
+        `diff --git a/file1.js b/file1.js
+index abc123..def456 100644
+--- a/file1.js
++++ b/file1.js
+@@ -1,2 +1,2 @@
+-old line
++new line`,
+      );
+
+      // Act
+      const _response = await request(app)
+        .post("/api/diff")
+        .send({
+          startCommit: "abc123",
+          endCommit: "def456",
+          files: ["file1.js"],
+          contextLines: 1000000,
+        })
+        .expect(200);
+
+      // Assert
+      expect(mockGit.diff).toHaveBeenCalledWith([
+        "abc123..def456",
+        "-U3",
+        "--",
+        "file1.js",
+      ]);
+    });
   });
 
   describe("stripDiffHeaders", () => {

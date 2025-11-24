@@ -145,9 +145,14 @@ function createApp(git: SimpleGit, repoPath: string): Express {
       return res.status(400).json({ error: "Missing required parameters." });
     }
 
-    // Validate contextLines is a positive number
+    // Validate contextLines is a positive integer with reasonable bounds
     const validContextLines =
-      typeof contextLines === "number" && contextLines > 0 ? contextLines : 3;
+      typeof contextLines === "number" &&
+      Number.isInteger(contextLines) &&
+      contextLines > 0 &&
+      contextLines <= 999999
+        ? contextLines
+        : 3;
 
     try {
       const diffs: Record<string, DiffLine[]> = {};
