@@ -2,6 +2,80 @@ import path from "node:path";
 import express, { type Express, type Request, type Response } from "express";
 import simpleGit, { type SimpleGit } from "simple-git";
 
+interface DiffLine {
+  content: string;
+  oldLineNumber?: number;
+  newLineNumber?: number;
+}
+
+/**
+ * Parse git diff output to extract line numbers and content.
+ * Processes hunk headers (@@ -oldStart,oldCount +newStart,newCount @@) to track line numbers.
+ * @param diff The raw diff output from git
+ * @returns Array of diff lines with line numbers
+ */
+function parseDiffWithLineNumbers(diff: string): DiffLine[] {
+  const lines = diff.split("\n");
+  const diffLines: DiffLine[] = [];
+  let oldLineNumber = 0;
+  let newLineNumber = 0;
+  let inContent = false;
+
+  for (const line of lines) {
+    // Parse hunk header to get starting line numbers
+    if (line.startsWith("@@ ")) {
+      inContent = true;
+      const match = line.match(/@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/);
+      if (match) {
+        oldLineNumber = Number.parseInt(match[1], 10);
+        newLineNumber = Number.parseInt(match[2], 10);
+      } else {
+        // Log warning for malformed hunk header
+        console.warn(`Failed to parse hunk header: ${line}`);
+      }
+      continue;
+    }
+
+    // Skip header lines before first hunk
+    if (!inContent) {
+      continue;
+    }
+
+    // Skip empty lines (e.g., from trailing newline in git output)
+    if (!line) {
+      continue;
+    }
+
+    // Process content lines
+    if (line.startsWith("+")) {
+      // Addition: only has new line number
+      diffLines.push({
+        content: line,
+        newLineNumber: newLineNumber,
+      });
+      newLineNumber++;
+    } else if (line.startsWith("-")) {
+      // Deletion: only has old line number
+      diffLines.push({
+        content: line,
+        oldLineNumber: oldLineNumber,
+      });
+      oldLineNumber++;
+    } else {
+      // Context line: has both line numbers
+      diffLines.push({
+        content: line,
+        oldLineNumber: oldLineNumber,
+        newLineNumber: newLineNumber,
+      });
+      oldLineNumber++;
+      newLineNumber++;
+    }
+  }
+
+  return diffLines;
+}
+
 /**
  * Strip git diff headers from diff output, keeping only the actual diff content.
  * Removes header lines like:
@@ -15,25 +89,20 @@ import simpleGit, { type SimpleGit } from "simple-git";
  */
 function stripDiffHeaders(diff: string): string {
   const lines = diff.split("\n");
-  const contentLines: string[] = [];
   let inContent = false;
-
+  const contentLines: string[] = [];
   for (const line of lines) {
-    // When we hit a hunk header (@@), mark that we're in content but skip the header itself
+    // Skip all hunk header lines; first one flips us into content mode.
     if (line.startsWith("@@ ")) {
       inContent = true;
+      continue; // never include the hunk header itself
+    }
+    // Skip non-content header lines until first hunk encountered.
+    if (!inContent) {
       continue;
     }
-
-    // Once we're in content, keep all lines
-    if (inContent) {
-      contentLines.push(line);
-    }
-
-    // Before we're in content, skip header lines (we implicitly skip by not adding them to contentLines)
-    // These are lines like: diff --git, index, ---, +++
+    contentLines.push(line);
   }
-
   return contentLines.join("\n");
 }
 
@@ -71,7 +140,7 @@ function createApp(git: SimpleGit, repoPath: string): Express {
     }
 
     try {
-      const diffs: Record<string, string> = {};
+      const diffs: Record<string, DiffLine[]> = {};
       const excludedFiles: string[] = [];
       for (const file of files) {
         // Check if file exists in the end commit
@@ -83,16 +152,15 @@ function createApp(git: SimpleGit, repoPath: string): Express {
           continue;
         }
 
-        let diff: string = await git.diff([
+        const rawDiff: string = await git.diff([
           `${startCommit}..${endCommit}`,
           "--",
           file,
         ]);
 
-        // Strip git diff headers from the output
-        diff = stripDiffHeaders(diff);
+        let diffLines: DiffLine[];
 
-        if (!diff) {
+        if (!rawDiff) {
           // If diff is empty, check if file exists in start commit
           let fileExistsInStartCommit = false;
           try {
@@ -105,19 +173,23 @@ function createApp(git: SimpleGit, repoPath: string): Express {
 
           if (fileExistsInStartCommit) {
             // File exists in both commits with no changes - use special marker
-            diff = "NO_CHANGES";
+            diffLines = [{ content: "NO_CHANGES" }];
           } else {
             // File is new in end commit - show as all additions
             const fileContent: string = await git.show([
               `${endCommit}:${file}`,
             ]);
-            diff = fileContent
-              .split("\n")
-              .map((line) => `+${line}`)
-              .join("\n");
+            diffLines = fileContent.split("\n").map((line, index) => ({
+              content: `+${line}`,
+              newLineNumber: index + 1,
+            }));
           }
+        } else {
+          // Parse diff with line numbers
+          diffLines = parseDiffWithLineNumbers(rawDiff);
         }
-        diffs[file] = diff;
+
+        diffs[file] = diffLines;
       }
       res.json({ diffs, excludedFiles });
     } catch (error) {
@@ -180,4 +252,4 @@ if (require.main === module) {
   process.on("SIGTERM", () => shutdown("SIGTERM"));
 }
 
-export { createApp, stripDiffHeaders };
+export { createApp, stripDiffHeaders, parseDiffWithLineNumbers, type DiffLine };

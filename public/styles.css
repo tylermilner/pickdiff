@@ -68,6 +68,16 @@
   font-style: italic;
 }
 
+.diff-content .line-number {
+  display: inline-block;
+  color: #999;
+  margin-right: 10px;
+  user-select: none;
+  font-size: 0.9em;
+  min-width: 80px;
+  text-align: right;
+}
+
 .diff-content .addition {
   background-color: #e6ffec;
   border-left: 3px solid #28a745;
