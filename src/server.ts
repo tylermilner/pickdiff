@@ -92,12 +92,14 @@ function stripDiffHeaders(diff: string): string {
   let inContent = false;
   const contentLines: string[] = [];
   for (const line of lines) {
+    // Skip all hunk header lines; first one flips us into content mode.
+    if (line.startsWith("@@ ")) {
+      inContent = true;
+      continue; // never include the hunk header itself
+    }
+    // Skip non-content header lines until first hunk encountered.
     if (!inContent) {
-      if (line.startsWith("@@ ")) {
-        inContent = true;
-        continue; // skip hunk header itself
-      }
-      continue; // skip header lines
+      continue;
     }
     contentLines.push(line);
   }
