@@ -1890,4 +1890,214 @@ test.describe("PickDiff Application", () => {
     const postData = request.postDataJSON();
     expect(postData.contextLines).toBe(12);
   });
+
+  test("should display export button after diff is generated", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get commits
+    const repoPath: string = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+    const [endCommit, startCommit] = commits;
+
+    // Export button should be hidden initially
+    const exportContainer = page.locator("#export-container");
+    await expect(exportContainer).toBeHidden();
+
+    // Fill in form data
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select a file
+    const firstCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .first();
+    await firstCheckbox.check();
+
+    // Act
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Assert
+    // Export button should now be visible
+    await expect(exportContainer).toBeVisible();
+    const exportButton = page.locator("#export-markdown-btn");
+    await expect(exportButton).toBeVisible();
+    await expect(exportButton).toHaveText("Export to Markdown");
+  });
+
+  test("should keep export button hidden initially and show after successful diff", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Export container should be hidden initially
+    const exportContainer = page.locator("#export-container");
+    await expect(exportContainer).toBeHidden();
+
+    // Get commits
+    const repoPath: string = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+    const [endCommit, startCommit] = commits;
+
+    // Fill in form data
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select a file
+    const firstCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .first();
+    await firstCheckbox.check();
+
+    // Verify export container is still hidden before submitting
+    await expect(exportContainer).toBeHidden();
+
+    // Act
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Assert
+    // Export button should now be visible after successful diff
+    await expect(exportContainer).toBeVisible();
+  });
+
+  test("should trigger download when export button is clicked", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get commits
+    const repoPath: string = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+    const [endCommit, startCommit] = commits;
+
+    // Fill in form data
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select a file
+    const firstCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .first();
+    await firstCheckbox.check();
+
+    // Submit form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Act
+    // Listen for download event
+    const downloadPromise = page.waitForEvent("download");
+    await page.click("#export-markdown-btn");
+    const download = await downloadPromise;
+
+    // Assert
+    // Verify the download filename
+    expect(download.suggestedFilename()).toMatch(/^diff-export-.*\.md$/);
+  });
+
+  test("should generate markdown with correct content", async ({ page }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get commits
+    const repoPath: string = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+    const [endCommit, startCommit] = commits;
+
+    // Fill in form data
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select package.json
+    const packageCheckbox = page.locator(
+      '#file-tree input.file-checkbox[value="package.json"]',
+    );
+    await packageCheckbox.check();
+
+    // Submit form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Act
+    // Listen for download event
+    const downloadPromise = page.waitForEvent("download");
+    await page.click("#export-markdown-btn");
+    const download = await downloadPromise;
+
+    // Read the downloaded content
+    const downloadPath = await download.path();
+    if (!downloadPath) {
+      throw new Error("Download path not available");
+    }
+    const fs = await import("node:fs/promises");
+    const content = await fs.readFile(downloadPath, "utf-8");
+
+    // Assert
+    // Check that the markdown contains expected sections
+    expect(content).toContain("# Diff Summary");
+    expect(content).toContain("## Metadata");
+    expect(content).toContain(`- **Start Commit:** \`${startCommit}\``);
+    expect(content).toContain(`- **End Commit:** \`${endCommit}\``);
+    expect(content).toContain("## File Changes");
+    expect(content).toContain("### package.json");
+    expect(content).toContain("```json");
+  });
 });

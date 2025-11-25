@@ -61,6 +61,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const contextLinesSelect = document.getElementById(
     "context-lines",
   ) as HTMLSelectElement | null;
+  const exportContainer = document.getElementById(
+    "export-container",
+  ) as HTMLElement | null;
+  const exportMarkdownBtn = document.getElementById(
+    "export-markdown-btn",
+  ) as HTMLButtonElement | null;
 
   if (
     !repoPathSpan ||
@@ -75,13 +81,24 @@ document.addEventListener("DOMContentLoaded", () => {
     !selectedFilesList ||
     !selectedCountSpan ||
     !toggleSelectedFilesButton ||
-    !contextLinesSelect
+    !contextLinesSelect ||
+    !exportContainer ||
+    !exportMarkdownBtn
   ) {
     console.error("Missing required DOM elements.");
     return;
   }
 
   let repoPath = "";
+
+  // Store the current diff data for export functionality
+  let currentDiffData: {
+    startCommit: string;
+    endCommit: string;
+    contextLines: number;
+    diffs: { [file: string]: DiffLine[] };
+    excludedFiles: string[];
+  } | null = null;
 
   // Store the collapsed state of folders before auto-expanding during search
   const savedCollapsedState = new Map<Element, boolean>();
@@ -332,6 +349,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const diffs: DiffResponse = await response.json();
       displayDiffs(diffs.diffs, diffs.excludedFiles);
 
+      // Store diff data for export functionality
+      currentDiffData = {
+        startCommit,
+        endCommit,
+        contextLines,
+        diffs: diffs.diffs,
+        excludedFiles: diffs.excludedFiles,
+      };
+
+      // Show export button
+      exportContainer.style.display = "block";
+
       // Save data after successful diff generation
       localStorage.setItem(`startCommit_${repoPath}`, startCommit);
       localStorage.setItem(`endCommit_${repoPath}`, endCommit);
@@ -344,6 +373,9 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error fetching diff:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
       diffSummary.innerHTML = `<div class="alert alert-danger">${escapeHtml(message)}</div>`;
+      // Hide export button on error
+      exportContainer.style.display = "none";
+      currentDiffData = null;
     }
   });
 
@@ -787,4 +819,157 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .join("\n");
   }
+
+  /**
+   * Get the language identifier for markdown code fences based on file extension
+   */
+  function getMarkdownLanguage(filename: string): string {
+    const extension = filename.split(".").pop()?.toLowerCase();
+    const languageMap: { [key: string]: string } = {
+      js: "javascript",
+      jsx: "javascript",
+      ts: "typescript",
+      tsx: "typescript",
+      py: "python",
+      rb: "ruby",
+      java: "java",
+      c: "c",
+      cpp: "cpp",
+      cc: "cpp",
+      cxx: "cpp",
+      h: "c",
+      hpp: "cpp",
+      cs: "csharp",
+      go: "go",
+      rs: "rust",
+      php: "php",
+      swift: "swift",
+      kt: "kotlin",
+      scala: "scala",
+      html: "html",
+      htm: "html",
+      xml: "xml",
+      css: "css",
+      scss: "scss",
+      sass: "sass",
+      less: "less",
+      json: "json",
+      yaml: "yaml",
+      yml: "yaml",
+      md: "markdown",
+      sh: "bash",
+      bash: "bash",
+      zsh: "bash",
+      sql: "sql",
+      r: "r",
+      m: "objectivec",
+      mm: "objectivec",
+    };
+
+    return extension ? languageMap[extension] || "diff" : "diff";
+  }
+
+  /**
+   * Generate markdown content from the diff data
+   */
+  function generateMarkdown(data: {
+    startCommit: string;
+    endCommit: string;
+    contextLines: number;
+    diffs: { [file: string]: DiffLine[] };
+    excludedFiles: string[];
+  }): string {
+    const lines: string[] = [];
+
+    // Header
+    lines.push("# Diff Summary");
+    lines.push("");
+
+    // Metadata
+    lines.push("## Metadata");
+    lines.push("");
+    lines.push(`- **Repository:** ${repoPath}`);
+    lines.push(`- **Start Commit:** \`${data.startCommit}\``);
+    lines.push(`- **End Commit:** \`${data.endCommit}\``);
+    lines.push(`- **Context Lines:** ${data.contextLines}`);
+    lines.push(`- **Files Changed:** ${Object.keys(data.diffs).length}`);
+    lines.push("");
+
+    // Excluded files warning
+    if (data.excludedFiles.length > 0) {
+      lines.push("## Excluded Files");
+      lines.push("");
+      lines.push(
+        "The following files were excluded because they do not exist in the end commit:",
+      );
+      lines.push("");
+      for (const file of data.excludedFiles) {
+        lines.push(`- \`${file}\``);
+      }
+      lines.push("");
+    }
+
+    // File diffs
+    lines.push("## File Changes");
+    lines.push("");
+
+    for (const file in data.diffs) {
+      if (!Object.keys(data.diffs).includes(file)) continue;
+
+      lines.push(`### ${file}`);
+      lines.push("");
+
+      const diffLines = data.diffs[file];
+
+      // Check if this file has no changes
+      if (diffLines.length === 1 && diffLines[0].content === "NO_CHANGES") {
+        lines.push("*No changes*");
+        lines.push("");
+        continue;
+      }
+
+      // Get the language for syntax highlighting in markdown
+      const language = getMarkdownLanguage(file);
+
+      // Create the diff content
+      lines.push(`\`\`\`${language}`);
+      for (const diffLine of diffLines) {
+        lines.push(diffLine.content);
+      }
+      lines.push("```");
+      lines.push("");
+    }
+
+    return lines.join("\n");
+  }
+
+  /**
+   * Download content as a file
+   */
+  function downloadFile(content: string, filename: string): void {
+    const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  }
+
+  /**
+   * Handle export to markdown button click
+   */
+  exportMarkdownBtn.addEventListener("click", () => {
+    if (!currentDiffData) {
+      alert("No diff data available to export.");
+      return;
+    }
+
+    const markdown = generateMarkdown(currentDiffData);
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `diff-export-${timestamp}.md`;
+    downloadFile(markdown, filename);
+  });
 });

@@ -126,3 +126,11 @@
   padding: 2px 0;
   word-break: break-all;
 }
+
+#export-container {
+  margin-top: 1rem;
+}
+
+#export-markdown-btn {
+  font-weight: 500;
+}
