@@ -250,7 +250,9 @@ document.addEventListener("DOMContentLoaded", () => {
     // Load saved context lines, default to 3 if not set
     const savedContextLines =
       localStorage.getItem(`contextLines_${repoPath}`) || "3";
-    contextLinesSelect.value = savedContextLines;
+    if (contextLinesSelect) {
+      contextLinesSelect.value = savedContextLines;
+    }
 
     // Fetch files and build the file tree
     fetch("/api/files")
