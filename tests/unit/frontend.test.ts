@@ -314,78 +314,6 @@ describe("Frontend Syntax Highlighting", () => {
     });
   });
 
-  describe("getMarkdownLanguage", () => {
-    // Language mapping function from frontend/script.ts for markdown export
-    function getMarkdownLanguage(filename: string): string {
-      const extension = filename.split(".").pop()?.toLowerCase();
-      const languageMap: { [key: string]: string } = {
-        js: "javascript",
-        jsx: "javascript",
-        ts: "typescript",
-        tsx: "typescript",
-        py: "python",
-        rb: "ruby",
-        java: "java",
-        c: "c",
-        cpp: "cpp",
-        cc: "cpp",
-        cxx: "cpp",
-        h: "c",
-        hpp: "cpp",
-        cs: "csharp",
-        go: "go",
-        rs: "rust",
-        php: "php",
-        swift: "swift",
-        kt: "kotlin",
-        scala: "scala",
-        html: "html",
-        htm: "html",
-        xml: "xml",
-        css: "css",
-        scss: "scss",
-        sass: "sass",
-        less: "less",
-        json: "json",
-        yaml: "yaml",
-        yml: "yaml",
-        md: "markdown",
-        sh: "bash",
-        bash: "bash",
-        zsh: "bash",
-        sql: "sql",
-        r: "r",
-        m: "objectivec",
-        mm: "objectivec",
-      };
-
-      return extension ? languageMap[extension] || "diff" : "diff";
-    }
-
-    it("should return 'typescript' for .ts files", () => {
-      expect(getMarkdownLanguage("script.ts")).toBe("typescript");
-      expect(getMarkdownLanguage("path/to/component.ts")).toBe("typescript");
-    });
-
-    it("should return 'javascript' for .js files", () => {
-      expect(getMarkdownLanguage("script.js")).toBe("javascript");
-    });
-
-    it("should return 'python' for .py files", () => {
-      expect(getMarkdownLanguage("main.py")).toBe("python");
-    });
-
-    it("should return 'diff' for unknown extensions", () => {
-      expect(getMarkdownLanguage("file.unknown")).toBe("diff");
-      expect(getMarkdownLanguage("file.xyz")).toBe("diff");
-    });
-
-    it("should return 'diff' for files without extension", () => {
-      expect(getMarkdownLanguage("Dockerfile")).toBe("diff");
-      expect(getMarkdownLanguage("Makefile")).toBe("diff");
-    });
-  });
-
   describe("generateMarkdown", () => {
     interface DiffLine {
       content: string;
@@ -449,17 +377,8 @@ describe("Frontend Syntax Highlighting", () => {
           continue;
         }
 
-        // Get the language for syntax highlighting
-        const extension = file.split(".").pop()?.toLowerCase();
-        const languageMap: { [key: string]: string } = {
-          ts: "typescript",
-          js: "javascript",
-          py: "python",
-        };
-        const language = extension ? languageMap[extension] || "diff" : "diff";
-
-        // Create the diff content
-        lines.push(`\`\`\`${language}`);
+        // Create the diff content - always use 'diff' format
+        lines.push("```diff");
         for (const diffLine of diffLines) {
           lines.push(diffLine.content);
         }
@@ -552,7 +471,7 @@ describe("Frontend Syntax Highlighting", () => {
       const result = generateMarkdown(data);
       expect(result).toContain("## File Changes");
       expect(result).toContain("### src/server.ts");
-      expect(result).toContain("```typescript");
+      expect(result).toContain("```diff");
       expect(result).toContain(" const x = 1;");
       expect(result).toContain("+const y = 2;");
       expect(result).toContain("-const z = 3;");
@@ -576,7 +495,7 @@ describe("Frontend Syntax Highlighting", () => {
       expect(result).toContain("*No changes*");
     });
 
-    it("should use correct language for code fences based on file extension", () => {
+    it("should always use 'diff' language for code fences", () => {
       const data = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
@@ -590,8 +509,10 @@ describe("Frontend Syntax Highlighting", () => {
       };
 
       const result = generateMarkdown(data);
-      expect(result).toContain("```javascript");
-      expect(result).toContain("```python");
+      expect(result).toContain("```diff");
+      // Should not contain language-specific code fences
+      expect(result).not.toContain("```javascript");
+      expect(result).not.toContain("```python");
     });
 
     it("should use 'diff' language for unknown file extensions", () => {

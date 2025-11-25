@@ -821,55 +821,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   /**
-   * Get the language identifier for markdown code fences based on file extension
-   */
-  function getMarkdownLanguage(filename: string): string {
-    const extension = filename.split(".").pop()?.toLowerCase();
-    const languageMap: { [key: string]: string } = {
-      js: "javascript",
-      jsx: "javascript",
-      ts: "typescript",
-      tsx: "typescript",
-      py: "python",
-      rb: "ruby",
-      java: "java",
-      c: "c",
-      cpp: "cpp",
-      cc: "cpp",
-      cxx: "cpp",
-      h: "c",
-      hpp: "cpp",
-      cs: "csharp",
-      go: "go",
-      rs: "rust",
-      php: "php",
-      swift: "swift",
-      kt: "kotlin",
-      scala: "scala",
-      html: "html",
-      htm: "html",
-      xml: "xml",
-      css: "css",
-      scss: "scss",
-      sass: "sass",
-      less: "less",
-      json: "json",
-      yaml: "yaml",
-      yml: "yaml",
-      md: "markdown",
-      sh: "bash",
-      bash: "bash",
-      zsh: "bash",
-      sql: "sql",
-      r: "r",
-      m: "objectivec",
-      mm: "objectivec",
-    };
-
-    return extension ? languageMap[extension] || "diff" : "diff";
-  }
-
-  /**
    * Generate markdown content from the diff data
    */
   function generateMarkdown(data: {
@@ -926,11 +877,8 @@ document.addEventListener("DOMContentLoaded", () => {
         continue;
       }
 
-      // Get the language for syntax highlighting in markdown
-      const language = getMarkdownLanguage(file);
-
-      // Create the diff content
-      lines.push(`\`\`\`${language}`);
+      // Create the diff content - always use 'diff' format for code blocks
+      lines.push("```diff");
       for (const diffLine of diffLines) {
         lines.push(diffLine.content);
       }
