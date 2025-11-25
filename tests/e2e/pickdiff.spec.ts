@@ -1728,4 +1728,166 @@ test.describe("PickDiff Application", () => {
     });
     expect(tokenColor).toBeTruthy();
   });
+
+  test("should display context lines dropdown", async ({ page }) => {
+    // Act
+    await page.goto("/");
+
+    // Assert
+    const contextLinesSelect = page.locator("#context-lines");
+    await expect(contextLinesSelect).toBeVisible();
+
+    // Check that the label is correct
+    const label = page.locator('label[for="context-lines"]');
+    await expect(label).toHaveText("Context Lines");
+  });
+
+  test("should have correct default value for context lines", async ({
+    page,
+  }) => {
+    // Act
+    await page.goto("/");
+
+    // Assert
+    const contextLinesSelect = page.locator("#context-lines");
+    await expect(contextLinesSelect).toHaveValue("3");
+  });
+
+  test("should allow selecting different context lines values", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    const contextLinesSelect = page.locator("#context-lines");
+
+    // Act & Assert
+    // Test selecting 1 line
+    await contextLinesSelect.selectOption("1");
+    await expect(contextLinesSelect).toHaveValue("1");
+
+    // Test selecting 6 lines
+    await contextLinesSelect.selectOption("6");
+    await expect(contextLinesSelect).toHaveValue("6");
+
+    // Test selecting whole file (999999)
+    await contextLinesSelect.selectOption("999999");
+    await expect(contextLinesSelect).toHaveValue("999999");
+  });
+
+  test("should have all expected context lines options", async ({ page }) => {
+    // Act
+    await page.goto("/");
+
+    // Assert
+    const contextLinesSelect = page.locator("#context-lines");
+    const options = contextLinesSelect.locator("option");
+
+    // Should have 8 options
+    await expect(options).toHaveCount(8);
+
+    // Verify option values using attribute
+    await expect(options.nth(0)).toHaveAttribute("value", "1");
+    await expect(options.nth(1)).toHaveAttribute("value", "3");
+    await expect(options.nth(2)).toHaveAttribute("value", "6");
+    await expect(options.nth(3)).toHaveAttribute("value", "12");
+    await expect(options.nth(4)).toHaveAttribute("value", "25");
+    await expect(options.nth(5)).toHaveAttribute("value", "50");
+    await expect(options.nth(6)).toHaveAttribute("value", "100");
+    await expect(options.nth(7)).toHaveAttribute("value", "999999");
+  });
+
+  test("should persist context lines selection in localStorage", async ({
+    page,
+  }) => {
+    // Arrange
+    const repoPath: string = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+    const [endCommit, startCommit] = commits;
+
+    await page.goto("/");
+
+    // Fill in form data with real commit hashes
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select a file
+    const firstCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .first();
+    await firstCheckbox.check();
+
+    // Change context lines to a non-default value
+    const contextLinesSelect = page.locator("#context-lines");
+    await contextLinesSelect.selectOption("6");
+
+    // Submit the form
+    await page.click('button[type="submit"]');
+
+    // Wait for diff to be displayed (ensures form submission completed)
+    await expect(page.locator(".diff-container")).toBeVisible();
+
+    // Act
+    // Reload page
+    await page.reload();
+
+    // Assert
+    // Context lines should be restored from localStorage
+    await expect(contextLinesSelect).toHaveValue("6");
+  });
+
+  test("should send context lines value with diff request", async ({
+    page,
+  }) => {
+    // Arrange
+    await page.goto("/");
+
+    // Wait for file tree to load
+    await page.waitForResponse(
+      (response) =>
+        response.url().includes("/api/files") && response.status() === 200,
+    );
+
+    // Get commits
+    const repoPath: string = path.join(__dirname, "../../");
+    const commits: string[] = execSync('git log --oneline -2 --format="%H"', {
+      cwd: repoPath,
+      encoding: "utf8",
+    })
+      .trim()
+      .split("\n");
+    const [endCommit, startCommit] = commits;
+
+    // Fill in form data
+    await page.fill("#start-commit", startCommit);
+    await page.fill("#end-commit", endCommit);
+
+    // Select a file
+    const firstCheckbox = page
+      .locator("#file-tree input.file-checkbox")
+      .first();
+    await firstCheckbox.check();
+
+    // Select context lines value
+    const contextLinesSelect = page.locator("#context-lines");
+    await contextLinesSelect.selectOption("12");
+
+    // Act & Assert
+    // Intercept the API request to verify contextLines is sent
+    const requestPromise = page.waitForRequest(
+      (request) =>
+        request.url().includes("/api/diff") && request.method() === "POST",
+    );
+
+    await page.click('button[type="submit"]');
+
+    const request = await requestPromise;
+    const postData = request.postDataJSON();
+    expect(postData.contextLines).toBe(12);
+  });
 });
