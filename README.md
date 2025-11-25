@@ -18,7 +18,8 @@ Traditional `git diff` commands can be difficult to read and manage, especially 
 - Select start and end commits for comparison.
 - Browse and select specific files from the repository to diff.
 - View a color-coded, line-by-line diff for selected files.
-- Easily export the diff output to HTML or PDF (via browser functionality) for further analysis or input into LLMs.
+- Export the diff output to Markdown for easy parsing by LLMs and other tools.
+- Easily export the diff output to HTML or PDF (via browser functionality) for further analysis.
 
 ## Setup and Installation
 
@@ -72,6 +73,7 @@ NO_BROWSER=true npm start
 5.  The file tree will display all tracked files in your repository. Select the files you wish to compare by checking the boxes next to their names.
 6.  Click the "Generate Summary" button.
 7.  The application will display the diffs for the selected files, with additions highlighted in green and deletions in red.
+8.  Click the "Export to Markdown" button to download the diff as a well-formatted Markdown document containing all metadata and file changes.
 
 Stopping the server: use Ctrl+C in the terminal where `npm start` is running. The server
 now handles SIGINT/SIGTERM and will perform a graceful shutdown of the HTTP server
