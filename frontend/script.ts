@@ -914,8 +914,6 @@ document.addEventListener("DOMContentLoaded", () => {
     lines.push("");
 
     for (const file in data.diffs) {
-      if (!Object.keys(data.diffs).includes(file)) continue;
-
       lines.push(`### ${file}`);
       lines.push("");
 
