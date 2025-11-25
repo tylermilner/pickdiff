@@ -133,11 +133,26 @@ function createApp(git: SimpleGit, repoPath: string): Express {
       startCommit,
       endCommit,
       files,
-    }: { startCommit: string; endCommit: string; files: string[] } = req.body;
+      contextLines = 3, // default to 3 if not provided
+    }: {
+      startCommit: string;
+      endCommit: string;
+      files: string[];
+      contextLines?: number;
+    } = req.body;
 
     if (!startCommit || !endCommit || !files || !Array.isArray(files)) {
       return res.status(400).json({ error: "Missing required parameters." });
     }
+
+    // Validate contextLines is a positive integer with reasonable bounds
+    const validContextLines =
+      typeof contextLines === "number" &&
+      Number.isInteger(contextLines) &&
+      contextLines > 0 &&
+      contextLines <= 999999
+        ? contextLines
+        : 3;
 
     try {
       const diffs: Record<string, DiffLine[]> = {};
@@ -154,6 +169,7 @@ function createApp(git: SimpleGit, repoPath: string): Express {
 
         const rawDiff: string = await git.diff([
           `${startCommit}..${endCommit}`,
+          `-U${validContextLines}`,
           "--",
           file,
         ]);
