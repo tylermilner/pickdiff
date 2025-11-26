@@ -167,13 +167,15 @@ export function parseArgs(args: string[]): CliOptions {
  */
 export function validateOptions(options: CliOptions): void {
   if (!options.startCommit) {
-    throw new Error("Missing value for: --start (-s)");
+    throw new Error("Missing required argument: --start (-s)");
   }
   if (!options.endCommit) {
-    throw new Error("Missing value for: --end (-e)");
+    throw new Error("Missing required argument: --end (-e)");
   }
   if (options.files.length === 0) {
-    throw new Error("Missing value for: --files (-f) or --file-list (-F)");
+    throw new Error(
+      "Missing required argument: --files (-f) or --file-list (-F)",
+    );
   }
 }
 

@@ -215,7 +215,7 @@ export interface MarkdownExportData {
 
 /**
  * Generate markdown content from the diff data.
- * This function is shared between the CLI and frontend.
+ * NOTE: This function is duplicated in frontend/markdown.ts - keep both in sync!
  * @param data The markdown export data
  * @returns Formatted markdown string
  */
