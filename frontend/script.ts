@@ -1,11 +1,7 @@
+import { type DiffLine, downloadFile, generateMarkdown } from "./markdown.js";
+
 interface RepoPathResponse {
   path: string;
-}
-
-interface DiffLine {
-  content: string;
-  oldLineNumber?: number;
-  newLineNumber?: number;
 }
 
 interface DiffResponse {
@@ -61,6 +57,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const contextLinesSelect = document.getElementById(
     "context-lines",
   ) as HTMLSelectElement | null;
+  const exportContainer = document.getElementById(
+    "export-container",
+  ) as HTMLElement | null;
+  const exportMarkdownBtn = document.getElementById(
+    "export-markdown-btn",
+  ) as HTMLButtonElement | null;
 
   if (
     !repoPathSpan ||
@@ -75,13 +77,24 @@ document.addEventListener("DOMContentLoaded", () => {
     !selectedFilesList ||
     !selectedCountSpan ||
     !toggleSelectedFilesButton ||
-    !contextLinesSelect
+    !contextLinesSelect ||
+    !exportContainer ||
+    !exportMarkdownBtn
   ) {
     console.error("Missing required DOM elements.");
     return;
   }
 
   let repoPath = "";
+
+  // Store the current diff data for export functionality
+  let currentDiffData: {
+    startCommit: string;
+    endCommit: string;
+    contextLines: number;
+    diffs: { [file: string]: DiffLine[] };
+    excludedFiles: string[];
+  } | null = null;
 
   // Store the collapsed state of folders before auto-expanding during search
   const savedCollapsedState = new Map<Element, boolean>();
@@ -332,6 +345,18 @@ document.addEventListener("DOMContentLoaded", () => {
       const diffs: DiffResponse = await response.json();
       displayDiffs(diffs.diffs, diffs.excludedFiles);
 
+      // Store diff data for export functionality
+      currentDiffData = {
+        startCommit,
+        endCommit,
+        contextLines,
+        diffs: diffs.diffs,
+        excludedFiles: diffs.excludedFiles,
+      };
+
+      // Show export button
+      exportContainer.style.display = "block";
+
       // Save data after successful diff generation
       localStorage.setItem(`startCommit_${repoPath}`, startCommit);
       localStorage.setItem(`endCommit_${repoPath}`, endCommit);
@@ -344,6 +369,9 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error fetching diff:", error);
       const message = error instanceof Error ? error.message : "Unknown error";
       diffSummary.innerHTML = `<div class="alert alert-danger">${escapeHtml(message)}</div>`;
+      // Hide export button on error
+      exportContainer.style.display = "none";
+      currentDiffData = null;
     }
   });
 
@@ -787,4 +815,22 @@ document.addEventListener("DOMContentLoaded", () => {
       })
       .join("\n");
   }
+
+  /**
+   * Handle export to markdown button click
+   */
+  exportMarkdownBtn.addEventListener("click", () => {
+    if (!currentDiffData) {
+      alert("No diff data available to export.");
+      return;
+    }
+
+    const markdown = generateMarkdown({
+      repoPath,
+      ...currentDiffData,
+    });
+    const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+    const filename = `diff-export-${timestamp}.md`;
+    downloadFile(markdown, filename);
+  });
 });

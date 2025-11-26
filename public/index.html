@@ -58,6 +58,9 @@
             </div>
             <button type="submit" class="btn btn-primary">Generate Summary</button>
         </form>
+        <div id="export-container" class="mt-3" style="display: none;">
+            <button type="button" class="btn btn-success" id="export-markdown-btn">Export to Markdown</button>
+        </div>
         <div id="diff-summary" class="mt-5"></div>
     </div>
 
@@ -65,6 +68,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.4/dist/umd/popper.min.js"></script>
     <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
-    <script src="script.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
 </html>

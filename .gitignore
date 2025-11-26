@@ -155,6 +155,8 @@ test-results/
 # Generated frontend assets (compiled from frontend/*.ts)
 public/script.js
 public/script.js.map
+public/markdown.js
+public/markdown.js.map
 
 # Package manager files (keep package-lock.json for npm)
 yarn.lock

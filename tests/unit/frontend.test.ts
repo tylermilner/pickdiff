@@ -6,6 +6,11 @@
  * we test the language mapping and line processing logic here.
  */
 
+import {
+  generateMarkdown,
+  type MarkdownExportData,
+} from "../../frontend/markdown";
+
 describe("Frontend Syntax Highlighting", () => {
   describe("getLanguageFromFilename", () => {
     // Language mapping function from frontend/script.ts
@@ -311,6 +316,152 @@ describe("Frontend Syntax Highlighting", () => {
       expect(result).not.toContain('<span class="addition">');
       expect(result).not.toContain('<span class="deletion">');
       expect(result).toBe(" const x = 1;");
+    });
+  });
+
+  describe("generateMarkdown", () => {
+    // Tests use the imported generateMarkdown function from frontend/markdown.ts
+
+    it("should generate markdown with correct header", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: {},
+        excludedFiles: [],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).toContain("# Diff Summary");
+    });
+
+    it("should include metadata section with all required fields", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: { "file.ts": [{ content: "+const x = 1;" }] },
+        excludedFiles: [],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).toContain("## Metadata");
+      expect(result).toContain("- **Repository:** `/path/to/repo`");
+      expect(result).toContain("- **Start Commit:** `abc123`");
+      expect(result).toContain("- **End Commit:** `def456`");
+      expect(result).toContain("- **Context Lines:** 3");
+      expect(result).toContain("- **Files Changed:** 1");
+    });
+
+    it("should include excluded files section when files are excluded", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: {},
+        excludedFiles: ["deleted-file.ts", "another-deleted.js"],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).toContain("## Excluded Files");
+      expect(result).toContain("- `deleted-file.ts`");
+      expect(result).toContain("- `another-deleted.js`");
+    });
+
+    it("should not include excluded files section when no files are excluded", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: { "file.ts": [{ content: "+const x = 1;" }] },
+        excludedFiles: [],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).not.toContain("## Excluded Files");
+    });
+
+    it("should format file diffs with proper headers", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: {
+          "src/server.ts": [
+            { content: " const x = 1;", oldLineNumber: 1, newLineNumber: 1 },
+            { content: "+const y = 2;", newLineNumber: 2 },
+            { content: "-const z = 3;", oldLineNumber: 2 },
+          ],
+        },
+        excludedFiles: [],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).toContain("## File Changes");
+      expect(result).toContain("### `src/server.ts`");
+      expect(result).toContain("```diff");
+      expect(result).toContain(" const x = 1;");
+      expect(result).toContain("+const y = 2;");
+      expect(result).toContain("-const z = 3;");
+      expect(result).toContain("```");
+    });
+
+    it("should handle files with no changes", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: {
+          "unchanged.ts": [{ content: "NO_CHANGES" }],
+        },
+        excludedFiles: [],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).toContain("### `unchanged.ts`");
+      expect(result).toContain("*No changes*");
+    });
+
+    it("should always use 'diff' language for code fences", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: {
+          "script.js": [{ content: "+const x = 1;" }],
+          "main.py": [{ content: "+def hello():" }],
+        },
+        excludedFiles: [],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).toContain("```diff");
+      // Should not contain language-specific code fences
+      expect(result).not.toContain("```javascript");
+      expect(result).not.toContain("```python");
+    });
+
+    it("should use 'diff' language for unknown file extensions", () => {
+      const data: MarkdownExportData = {
+        repoPath: "/path/to/repo",
+        startCommit: "abc123",
+        endCommit: "def456",
+        contextLines: 3,
+        diffs: {
+          "config.xyz": [{ content: "+setting = value" }],
+        },
+        excludedFiles: [],
+      };
+
+      const result = generateMarkdown(data);
+      expect(result).toContain("```diff");
     });
   });
 });
