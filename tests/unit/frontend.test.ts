@@ -6,6 +6,11 @@
  * we test the language mapping and line processing logic here.
  */
 
+import {
+  generateMarkdown,
+  type MarkdownExportData,
+} from "../../frontend/markdown";
+
 describe("Frontend Syntax Highlighting", () => {
   describe("getLanguageFromFilename", () => {
     // Language mapping function from frontend/script.ts
@@ -315,82 +320,10 @@ describe("Frontend Syntax Highlighting", () => {
   });
 
   describe("generateMarkdown", () => {
-    interface DiffLine {
-      content: string;
-      oldLineNumber?: number;
-      newLineNumber?: number;
-    }
-
-    // Simplified version of generateMarkdown for testing
-    function generateMarkdown(data: {
-      repoPath: string;
-      startCommit: string;
-      endCommit: string;
-      contextLines: number;
-      diffs: { [file: string]: DiffLine[] };
-      excludedFiles: string[];
-    }): string {
-      const lines: string[] = [];
-
-      // Header
-      lines.push("# Diff Summary");
-      lines.push("");
-
-      // Metadata
-      lines.push("## Metadata");
-      lines.push("");
-      lines.push(`- **Repository:** ${data.repoPath}`);
-      lines.push(`- **Start Commit:** \`${data.startCommit}\``);
-      lines.push(`- **End Commit:** \`${data.endCommit}\``);
-      lines.push(`- **Context Lines:** ${data.contextLines}`);
-      lines.push(`- **Files Changed:** ${Object.keys(data.diffs).length}`);
-      lines.push("");
-
-      // Excluded files warning
-      if (data.excludedFiles.length > 0) {
-        lines.push("## Excluded Files");
-        lines.push("");
-        lines.push(
-          "The following files were excluded because they do not exist in the end commit:",
-        );
-        lines.push("");
-        for (const file of data.excludedFiles) {
-          lines.push(`- \`${file}\``);
-        }
-        lines.push("");
-      }
-
-      // File diffs
-      lines.push("## File Changes");
-      lines.push("");
-
-      for (const file in data.diffs) {
-        lines.push(`### ${file}`);
-        lines.push("");
-
-        const diffLines = data.diffs[file];
-
-        // Check if this file has no changes
-        if (diffLines.length === 1 && diffLines[0].content === "NO_CHANGES") {
-          lines.push("*No changes*");
-          lines.push("");
-          continue;
-        }
-
-        // Create the diff content - always use 'diff' format
-        lines.push("```diff");
-        for (const diffLine of diffLines) {
-          lines.push(diffLine.content);
-        }
-        lines.push("```");
-        lines.push("");
-      }
-
-      return lines.join("\n");
-    }
+    // Tests use the imported generateMarkdown function from frontend/markdown.ts
 
     it("should generate markdown with correct header", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
@@ -404,7 +337,7 @@ describe("Frontend Syntax Highlighting", () => {
     });
 
     it("should include metadata section with all required fields", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
@@ -415,7 +348,7 @@ describe("Frontend Syntax Highlighting", () => {
 
       const result = generateMarkdown(data);
       expect(result).toContain("## Metadata");
-      expect(result).toContain("- **Repository:** /path/to/repo");
+      expect(result).toContain("- **Repository:** `/path/to/repo`");
       expect(result).toContain("- **Start Commit:** `abc123`");
       expect(result).toContain("- **End Commit:** `def456`");
       expect(result).toContain("- **Context Lines:** 3");
@@ -423,7 +356,7 @@ describe("Frontend Syntax Highlighting", () => {
     });
 
     it("should include excluded files section when files are excluded", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
@@ -439,7 +372,7 @@ describe("Frontend Syntax Highlighting", () => {
     });
 
     it("should not include excluded files section when no files are excluded", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
@@ -453,7 +386,7 @@ describe("Frontend Syntax Highlighting", () => {
     });
 
     it("should format file diffs with proper headers", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
@@ -470,7 +403,7 @@ describe("Frontend Syntax Highlighting", () => {
 
       const result = generateMarkdown(data);
       expect(result).toContain("## File Changes");
-      expect(result).toContain("### src/server.ts");
+      expect(result).toContain("### `src/server.ts`");
       expect(result).toContain("```diff");
       expect(result).toContain(" const x = 1;");
       expect(result).toContain("+const y = 2;");
@@ -479,7 +412,7 @@ describe("Frontend Syntax Highlighting", () => {
     });
 
     it("should handle files with no changes", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
@@ -491,12 +424,12 @@ describe("Frontend Syntax Highlighting", () => {
       };
 
       const result = generateMarkdown(data);
-      expect(result).toContain("### unchanged.ts");
+      expect(result).toContain("### `unchanged.ts`");
       expect(result).toContain("*No changes*");
     });
 
     it("should always use 'diff' language for code fences", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
@@ -516,7 +449,7 @@ describe("Frontend Syntax Highlighting", () => {
     });
 
     it("should use 'diff' language for unknown file extensions", () => {
-      const data = {
+      const data: MarkdownExportData = {
         repoPath: "/path/to/repo",
         startCommit: "abc123",
         endCommit: "def456",
