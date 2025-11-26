@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import {
   formatMarkdown,
@@ -268,7 +269,7 @@ describe("CLI", () => {
 
     it("should parse --file-list argument from file", () => {
       // Create a temporary file with file paths
-      const tmpDir = "/tmp/pickdiff-test";
+      const tmpDir = path.join(os.tmpdir(), "pickdiff-test");
       const fileListPath = path.join(tmpDir, "files.txt");
 
       if (!fs.existsSync(tmpDir)) {
@@ -298,7 +299,7 @@ describe("CLI", () => {
     });
 
     it("should allow combining --files and --file-list", () => {
-      const tmpDir = "/tmp/pickdiff-test";
+      const tmpDir = path.join(os.tmpdir(), "pickdiff-test");
       const fileListPath = path.join(tmpDir, "files.txt");
 
       if (!fs.existsSync(tmpDir)) {
