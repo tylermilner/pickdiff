@@ -327,6 +327,45 @@ describe("CLI", () => {
         fs.unlinkSync(fileListPath);
       }
     });
+
+    it("should parse --write argument", () => {
+      const options = parseArgs([
+        "-s",
+        "abc",
+        "-e",
+        "def",
+        "-f",
+        "file.ts",
+        "--write",
+        "/path/to/output.md",
+      ]);
+      expect(options.outputFile).toBe(path.resolve("/path/to/output.md"));
+    });
+
+    it("should parse short -w argument", () => {
+      const options = parseArgs([
+        "-s",
+        "abc",
+        "-e",
+        "def",
+        "-f",
+        "file.ts",
+        "-w",
+        "output.txt",
+      ]);
+      expect(options.outputFile).toBe(path.resolve("output.txt"));
+    });
+
+    it("should default to null output file", () => {
+      const options = parseArgs(["-s", "abc", "-e", "def", "-f", "file.ts"]);
+      expect(options.outputFile).toBeNull();
+    });
+
+    it("should throw for missing --write value", () => {
+      expect(() =>
+        parseArgs(["-s", "abc", "-e", "def", "-f", "file.ts", "--write"]),
+      ).toThrow("Missing value for --write");
+    });
   });
 
   describe("validateOptions", () => {
@@ -338,6 +377,7 @@ describe("CLI", () => {
         files: ["file.ts"],
         contextLines: 3,
         output: "stdout" as const,
+        outputFile: null,
       };
       expect(() => validateOptions(options)).toThrow(
         "Missing required argument: --start",
@@ -352,6 +392,7 @@ describe("CLI", () => {
         files: ["file.ts"],
         contextLines: 3,
         output: "stdout" as const,
+        outputFile: null,
       };
       expect(() => validateOptions(options)).toThrow(
         "Missing required argument: --end",
@@ -366,6 +407,7 @@ describe("CLI", () => {
         files: [],
         contextLines: 3,
         output: "stdout" as const,
+        outputFile: null,
       };
       expect(() => validateOptions(options)).toThrow(
         "Missing required argument: --files",
@@ -380,6 +422,7 @@ describe("CLI", () => {
         files: ["file.ts"],
         contextLines: 3,
         output: "stdout" as const,
+        outputFile: null,
       };
       expect(() => validateOptions(options)).not.toThrow();
     });

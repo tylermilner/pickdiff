@@ -88,6 +88,7 @@ npm run cli -- [options]
 - `-r, --repo <path>` - Repository path (default: current directory)
 - `-c, --context <lines>` - Number of context lines (default: 3)
 - `-o, --output <format>` - Output format: `stdout` (raw diff) or `markdown` (default: stdout)
+- `-w, --write <file>` - Write output to file instead of terminal
 - `-h, --help` - Show help message
 - `-v, --version` - Show version
 
@@ -102,6 +103,9 @@ npm run cli -- -s abc123 -e def456 -F files.txt -o markdown
 
 # Specify a different repository
 npm run cli -- -r /path/to/repo -s main -e feature-branch -f README.md
+
+# Write markdown output to a file
+npm run cli -- -s HEAD~5 -e HEAD -f src/index.ts -o markdown -w diff.md
 ```
 
 ## Usage (Web UI)

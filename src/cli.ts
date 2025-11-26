@@ -14,6 +14,7 @@ interface CliOptions {
   files: string[];
   contextLines: number;
   output: "markdown" | "stdout";
+  outputFile: string | null;
 }
 
 /**
@@ -29,6 +30,7 @@ export function parseArgs(args: string[]): CliOptions {
     files: [],
     contextLines: 3,
     output: "stdout",
+    outputFile: null,
   };
 
   let i = 0;
@@ -127,6 +129,15 @@ export function parseArgs(args: string[]): CliOptions {
         options.output = args[i] as "markdown" | "stdout";
         break;
 
+      case "--write":
+      case "-w":
+        i++;
+        if (i >= args.length) {
+          throw new Error(`Missing value for ${arg}`);
+        }
+        options.outputFile = path.resolve(args[i]);
+        break;
+
       case "--help":
       case "-h":
         printHelp();
@@ -191,6 +202,7 @@ Optional:
   -r, --repo <path>        Repository path (default: current directory)
   -c, --context <lines>    Number of context lines (default: 3)
   -o, --output <format>    Output format: 'stdout' (raw diff) or 'markdown' (default: stdout)
+  -w, --write <file>       Write output to file instead of terminal
   -h, --help               Show this help message
   -v, --version            Show version
 
@@ -198,6 +210,7 @@ Examples:
   pickdiff -s HEAD~5 -e HEAD -f src/index.ts,src/utils.ts
   pickdiff --start abc123 --end def456 --file-list files.txt --output markdown
   pickdiff -r /path/to/repo -s main -e feature-branch -f README.md
+  pickdiff -s HEAD~5 -e HEAD -f src/index.ts -o markdown -w diff.md
 `);
 }
 
@@ -307,7 +320,13 @@ export async function main(
       output = formatStdoutDiff(result);
     }
 
-    console.log(output);
+    // Write to file or stdout
+    if (options.outputFile) {
+      fs.writeFileSync(options.outputFile, output, "utf-8");
+      console.log(`Output written to: ${options.outputFile}`);
+    } else {
+      console.log(output);
+    }
   } catch (error) {
     console.error(
       `Error: ${error instanceof Error ? error.message : "Unknown error"}`,
