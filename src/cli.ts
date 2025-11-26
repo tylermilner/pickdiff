@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import simpleGit from "simple-git";
-import { type DiffResult, generateDiffs } from "./diff.js";
+import { type DiffResult, generateDiffs, generateMarkdown } from "./diff.js";
 
 /**
  * CLI options for pickdiff.
@@ -13,7 +13,7 @@ interface CliOptions {
   endCommit: string;
   files: string[];
   contextLines: number;
-  output: "markdown" | "unified";
+  output: "markdown" | "stdout";
 }
 
 /**
@@ -28,7 +28,7 @@ export function parseArgs(args: string[]): CliOptions {
     endCommit: "",
     files: [],
     contextLines: 3,
-    output: "unified",
+    output: "stdout",
   };
 
   let i = 0;
@@ -119,12 +119,12 @@ export function parseArgs(args: string[]): CliOptions {
         if (i >= args.length) {
           throw new Error(`Missing value for ${arg}`);
         }
-        if (args[i] !== "markdown" && args[i] !== "unified") {
+        if (args[i] !== "markdown" && args[i] !== "stdout") {
           throw new Error(
-            `Invalid output format: ${args[i]}. Must be 'markdown' or 'unified'`,
+            `Invalid output format: ${args[i]}. Must be 'markdown' or 'stdout'`,
           );
         }
-        options.output = args[i] as "markdown" | "unified";
+        options.output = args[i] as "markdown" | "stdout";
         break;
 
       case "--help":
@@ -184,10 +184,13 @@ Required Options:
   -f, --files <files>      Comma-separated list of files to diff
   -F, --file-list <path>   Path to file containing list of files (one per line)
 
+  Note: At least one of --files or --file-list is required. Both can be used
+  together to combine file lists.
+
 Optional:
   -r, --repo <path>        Repository path (default: current directory)
   -c, --context <lines>    Number of context lines (default: 3)
-  -o, --output <format>    Output format: 'unified' or 'markdown' (default: unified)
+  -o, --output <format>    Output format: 'stdout' (raw diff) or 'markdown' (default: stdout)
   -h, --help               Show this help message
   -v, --version            Show version
 
@@ -213,11 +216,11 @@ export function printVersion(): void {
 }
 
 /**
- * Format diff output as unified diff.
+ * Format diff output for stdout (raw diff format).
  * @param diffs The diff result containing file diffs
- * @returns Formatted unified diff string
+ * @returns Formatted diff string
  */
-export function formatUnifiedDiff(diffs: DiffResult): string {
+export function formatStdoutDiff(diffs: DiffResult): string {
   const lines: string[] = [];
 
   for (const file of Object.keys(diffs.diffs)) {
@@ -248,72 +251,6 @@ export function formatUnifiedDiff(diffs: DiffResult): string {
     for (const file of diffs.excludedFiles) {
       lines.push(`#   ${file}`);
     }
-  }
-
-  return lines.join("\n");
-}
-
-/**
- * Format diff output as markdown.
- * @param diffs The diff result containing file diffs
- * @param options CLI options for metadata
- * @returns Formatted markdown string
- */
-export function formatMarkdown(diffs: DiffResult, options: CliOptions): string {
-  const lines: string[] = [];
-
-  // Header
-  lines.push("# Diff Summary");
-  lines.push("");
-
-  // Metadata
-  lines.push("## Metadata");
-  lines.push("");
-  lines.push(`- **Repository:** \`${options.repoPath}\``);
-  lines.push(`- **Start Commit:** \`${options.startCommit}\``);
-  lines.push(`- **End Commit:** \`${options.endCommit}\``);
-  lines.push(`- **Context Lines:** ${options.contextLines}`);
-  lines.push(`- **Files Changed:** ${Object.keys(diffs.diffs).length}`);
-  lines.push("");
-
-  // Excluded files warning
-  if (diffs.excludedFiles.length > 0) {
-    lines.push("## Excluded Files");
-    lines.push("");
-    lines.push(
-      "The following files were excluded because they do not exist in the end commit:",
-    );
-    lines.push("");
-    for (const file of diffs.excludedFiles) {
-      lines.push(`- \`${file}\``);
-    }
-    lines.push("");
-  }
-
-  // File diffs
-  lines.push("## File Changes");
-  lines.push("");
-
-  for (const file of Object.keys(diffs.diffs)) {
-    lines.push(`### \`${file}\``);
-    lines.push("");
-
-    const diffLines = diffs.diffs[file];
-
-    // Check if this file has no changes
-    if (diffLines.length === 1 && diffLines[0].content === "NO_CHANGES") {
-      lines.push("*No changes*");
-      lines.push("");
-      continue;
-    }
-
-    // Create the diff content
-    lines.push("```diff");
-    for (const diffLine of diffLines) {
-      lines.push(diffLine.content);
-    }
-    lines.push("```");
-    lines.push("");
   }
 
   return lines.join("\n");
@@ -358,9 +295,16 @@ export async function main(
     // Format and output
     let output: string;
     if (options.output === "markdown") {
-      output = formatMarkdown(result, options);
+      output = generateMarkdown({
+        repoPath: options.repoPath,
+        startCommit: options.startCommit,
+        endCommit: options.endCommit,
+        contextLines: options.contextLines,
+        diffs: result.diffs,
+        excludedFiles: result.excludedFiles,
+      });
     } else {
-      output = formatUnifiedDiff(result);
+      output = formatStdoutDiff(result);
     }
 
     console.log(output);

@@ -2,14 +2,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import {
-  formatMarkdown,
-  formatUnifiedDiff,
+  formatStdoutDiff,
   parseArgs,
   printHelp,
   printVersion,
   validateOptions,
 } from "../../src/cli";
-import type { DiffResult } from "../../src/diff";
+import { type DiffResult, generateMarkdown } from "../../src/diff";
 
 describe("CLI", () => {
   describe("parseArgs", () => {
@@ -182,7 +181,7 @@ describe("CLI", () => {
       expect(options.output).toBe("markdown");
     });
 
-    it("should parse --output unified", () => {
+    it("should parse --output stdout", () => {
       const options = parseArgs([
         "-s",
         "abc",
@@ -191,9 +190,9 @@ describe("CLI", () => {
         "-f",
         "file.ts",
         "--output",
-        "unified",
+        "stdout",
       ]);
-      expect(options.output).toBe("unified");
+      expect(options.output).toBe("stdout");
     });
 
     it("should parse short -o argument", () => {
@@ -210,9 +209,9 @@ describe("CLI", () => {
       expect(options.output).toBe("markdown");
     });
 
-    it("should default to unified output", () => {
+    it("should default to stdout output", () => {
       const options = parseArgs(["-s", "abc", "-e", "def", "-f", "file.ts"]);
-      expect(options.output).toBe("unified");
+      expect(options.output).toBe("stdout");
     });
 
     it("should throw for missing --start value", () => {
@@ -338,7 +337,7 @@ describe("CLI", () => {
         endCommit: "def456",
         files: ["file.ts"],
         contextLines: 3,
-        output: "unified" as const,
+        output: "stdout" as const,
       };
       expect(() => validateOptions(options)).toThrow(
         "Missing required argument: --start",
@@ -352,7 +351,7 @@ describe("CLI", () => {
         endCommit: "",
         files: ["file.ts"],
         contextLines: 3,
-        output: "unified" as const,
+        output: "stdout" as const,
       };
       expect(() => validateOptions(options)).toThrow(
         "Missing required argument: --end",
@@ -366,7 +365,7 @@ describe("CLI", () => {
         endCommit: "def456",
         files: [],
         contextLines: 3,
-        output: "unified" as const,
+        output: "stdout" as const,
       };
       expect(() => validateOptions(options)).toThrow(
         "Missing required argument: --files",
@@ -380,13 +379,13 @@ describe("CLI", () => {
         endCommit: "def456",
         files: ["file.ts"],
         contextLines: 3,
-        output: "unified" as const,
+        output: "stdout" as const,
       };
       expect(() => validateOptions(options)).not.toThrow();
     });
   });
 
-  describe("formatUnifiedDiff", () => {
+  describe("formatStdoutDiff", () => {
     it("should format basic diff output", () => {
       const result: DiffResult = {
         diffs: {
@@ -398,7 +397,7 @@ describe("CLI", () => {
         excludedFiles: [],
       };
 
-      const output = formatUnifiedDiff(result);
+      const output = formatStdoutDiff(result);
       expect(output).toContain("--- a/file.ts");
       expect(output).toContain("+++ b/file.ts");
       expect(output).toContain("-old line");
@@ -413,7 +412,7 @@ describe("CLI", () => {
         excludedFiles: [],
       };
 
-      const output = formatUnifiedDiff(result);
+      const output = formatStdoutDiff(result);
       expect(output).toContain("(no changes)");
     });
 
@@ -423,7 +422,7 @@ describe("CLI", () => {
         excludedFiles: ["deleted.ts", "removed.ts"],
       };
 
-      const output = formatUnifiedDiff(result);
+      const output = formatStdoutDiff(result);
       expect(output).toContain("# Excluded files");
       expect(output).toContain("deleted.ts");
       expect(output).toContain("removed.ts");
@@ -438,20 +437,18 @@ describe("CLI", () => {
         excludedFiles: [],
       };
 
-      const output = formatUnifiedDiff(result);
+      const output = formatStdoutDiff(result);
       expect(output).toContain("--- a/file1.ts");
       expect(output).toContain("--- a/file2.ts");
     });
   });
 
-  describe("formatMarkdown", () => {
-    const baseOptions = {
+  describe("generateMarkdown", () => {
+    const baseData = {
       repoPath: "/test/repo",
       startCommit: "abc123",
       endCommit: "def456",
-      files: ["file.ts"],
       contextLines: 3,
-      output: "markdown" as const,
     };
 
     it("should include header and metadata", () => {
@@ -460,7 +457,7 @@ describe("CLI", () => {
         excludedFiles: [],
       };
 
-      const output = formatMarkdown(result, baseOptions);
+      const output = generateMarkdown({ ...baseData, ...result });
       expect(output).toContain("# Diff Summary");
       expect(output).toContain("## Metadata");
       expect(output).toContain("**Repository:** `/test/repo`");
@@ -480,7 +477,7 @@ describe("CLI", () => {
         excludedFiles: [],
       };
 
-      const output = formatMarkdown(result, baseOptions);
+      const output = generateMarkdown({ ...baseData, ...result });
       expect(output).toContain("### `file.ts`");
       expect(output).toContain("```diff");
       expect(output).toContain("-old");
@@ -494,7 +491,7 @@ describe("CLI", () => {
         excludedFiles: [],
       };
 
-      const output = formatMarkdown(result, baseOptions);
+      const output = generateMarkdown({ ...baseData, ...result });
       expect(output).toContain("*No changes*");
     });
 
@@ -504,7 +501,7 @@ describe("CLI", () => {
         excludedFiles: ["deleted.ts"],
       };
 
-      const output = formatMarkdown(result, baseOptions);
+      const output = generateMarkdown({ ...baseData, ...result });
       expect(output).toContain("## Excluded Files");
       expect(output).toContain("`deleted.ts`");
     });
@@ -519,7 +516,7 @@ describe("CLI", () => {
         excludedFiles: [],
       };
 
-      const output = formatMarkdown(result, baseOptions);
+      const output = generateMarkdown({ ...baseData, ...result });
       expect(output).toContain("**Files Changed:** 3");
     });
   });
