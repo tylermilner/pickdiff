@@ -40,7 +40,11 @@ To get this application running on your local machine, follow these steps:
 
 ## How to Run
 
-After installation, you can start the application:
+There are two ways to use PickDiff: the **Web UI** or the **Command-Line Interface (CLI)**.
+
+### Web UI
+
+Start the application with:
 
 ```bash
 npm start
@@ -64,7 +68,43 @@ variable to `true` when starting:
 NO_BROWSER=true npm start
 ```
 
-## Usage
+### Command-Line Interface (CLI)
+
+For headless operation without the web UI, use the CLI:
+
+```bash
+npm run cli -- [options]
+```
+
+**Required Options:**
+- `-s, --start <commit>` - Start commit (base commit)
+- `-e, --end <commit>` - End commit (target commit)
+- `-f, --files <files>` - Comma-separated list of files to diff
+- `-F, --file-list <path>` - Path to file containing list of files (one per line)
+
+> **Note:** At least one of `--files` or `--file-list` is required. Both can be used together to combine file lists.
+
+**Optional:**
+- `-r, --repo <path>` - Repository path (default: current directory)
+- `-c, --context <lines>` - Number of context lines (default: 3)
+- `-o, --output <format>` - Output format: `stdout` (raw diff) or `markdown` (default: stdout)
+- `-h, --help` - Show help message
+- `-v, --version` - Show version
+
+**Examples:**
+
+```bash
+# Diff specific files between commits
+npm run cli -- -s HEAD~5 -e HEAD -f src/index.ts,src/utils.ts
+
+# Use a file list and output as markdown
+npm run cli -- -s abc123 -e def456 -F files.txt -o markdown
+
+# Specify a different repository
+npm run cli -- -r /path/to/repo -s main -e feature-branch -f README.md
+```
+
+## Usage (Web UI)
 
 1.  Start the application using one of the methods above.
 2.  Open your web browser and navigate to `http://localhost:3000` if it doesn't open automatically.

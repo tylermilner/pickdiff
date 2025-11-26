@@ -99,7 +99,9 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 The project uses TypeScript for both backend and frontend.
 
 - Backend source: `src/server.ts`
-- Backend output: `dist/server.js`
+- CLI source: `src/cli.ts`
+- Shared diff logic: `src/diff.ts`
+- Backend output: `dist/server.js`, `dist/cli.js`, `dist/diff.js`
 - Frontend source: `frontend/script.ts`
 - Frontend output: `public/script.js`
 
