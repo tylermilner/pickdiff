@@ -380,7 +380,7 @@ describe("CLI", () => {
         outputFile: null,
       };
       expect(() => validateOptions(options)).toThrow(
-        "Missing required argument: --start",
+        "Missing value for: --start (-s)",
       );
     });
 
@@ -395,7 +395,7 @@ describe("CLI", () => {
         outputFile: null,
       };
       expect(() => validateOptions(options)).toThrow(
-        "Missing required argument: --end",
+        "Missing value for: --end (-e)",
       );
     });
 
@@ -410,7 +410,7 @@ describe("CLI", () => {
         outputFile: null,
       };
       expect(() => validateOptions(options)).toThrow(
-        "Missing required argument: --files",
+        "Missing value for: --files (-f) or --file-list (-F)",
       );
     });
 
