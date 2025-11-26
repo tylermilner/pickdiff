@@ -839,7 +839,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Metadata
     lines.push("## Metadata");
     lines.push("");
-    lines.push(`- **Repository:** ${repoPath}`);
+    lines.push(`- **Repository:** \`${repoPath}\``);
     lines.push(`- **Start Commit:** \`${data.startCommit}\``);
     lines.push(`- **End Commit:** \`${data.endCommit}\``);
     lines.push(`- **Context Lines:** ${data.contextLines}`);
@@ -865,7 +865,7 @@ document.addEventListener("DOMContentLoaded", () => {
     lines.push("");
 
     for (const file in data.diffs) {
-      lines.push(`### ${file}`);
+      lines.push(`### \`${file}\``);
       lines.push("");
 
       const diffLines = data.diffs[file];
