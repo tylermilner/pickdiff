@@ -215,7 +215,15 @@ export interface MarkdownExportData {
 
 /**
  * Generate markdown content from the diff data.
- * NOTE: This function is duplicated in frontend/markdown.ts - keep both in sync!
+ * NOTE: This function is duplicated in frontend/markdown.ts for the browser.
+ * Both implementations MUST be kept in sync. This duplication exists because:
+ * 1. Backend uses Node16 modules (CommonJS-compatible)
+ * 2. Frontend uses ES2020 modules (browser-native ESM)
+ * 3. Different rootDirs prevent cross-compilation imports
+ *
+ * To share code would require a bundler (webpack/esbuild) or monorepo setup.
+ * For this simple function, keeping them in sync with tests is the pragmatic approach.
+ *
  * @param data The markdown export data
  * @returns Formatted markdown string
  */

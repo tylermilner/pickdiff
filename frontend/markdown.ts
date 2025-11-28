@@ -2,8 +2,13 @@
  * Markdown export utility functions for the frontend.
  *
  * NOTE: The generateMarkdown function is duplicated in src/diff.ts for backend/CLI use.
- * Both implementations MUST be kept in sync. This duplication exists because the frontend
- * and backend have separate TypeScript compilation contexts with different module systems.
+ * Both implementations MUST be kept in sync. This duplication exists because:
+ * 1. Backend uses Node16 modules (CommonJS-compatible)
+ * 2. Frontend uses ES2020 modules (browser-native ESM)
+ * 3. Different rootDirs prevent cross-compilation imports
+ *
+ * To share code would require a bundler (webpack/esbuild) or monorepo setup.
+ * For this simple function, keeping them in sync with tests is the pragmatic approach.
  */
 
 export interface DiffLine {
