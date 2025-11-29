@@ -1,6 +1,14 @@
 /**
- * Markdown export utility functions
- * These functions are extracted to allow for unit testing
+ * Markdown export utility functions for the frontend.
+ *
+ * NOTE: The generateMarkdown function is duplicated in src/diff.ts for backend/CLI use.
+ * Both implementations MUST be kept in sync. This duplication exists because:
+ * 1. Backend uses Node16 modules (CommonJS-compatible)
+ * 2. Frontend uses ES2020 modules (browser-native ESM)
+ * 3. Different rootDirs prevent cross-compilation imports
+ *
+ * To share code would require a bundler (webpack/esbuild) or monorepo setup.
+ * For this simple function, keeping them in sync with tests is the pragmatic approach.
  */
 
 export interface DiffLine {
@@ -19,7 +27,8 @@ export interface MarkdownExportData {
 }
 
 /**
- * Generate markdown content from the diff data
+ * Generate markdown content from the diff data.
+ * NOTE: This function is duplicated in src/diff.ts - keep both in sync!
  */
 export function generateMarkdown(data: MarkdownExportData): string {
   const lines: string[] = [];
@@ -56,7 +65,7 @@ export function generateMarkdown(data: MarkdownExportData): string {
   lines.push("## File Changes");
   lines.push("");
 
-  for (const file in data.diffs) {
+  for (const file of Object.keys(data.diffs)) {
     lines.push(`### \`${file}\``);
     lines.push("");
 
@@ -82,7 +91,7 @@ export function generateMarkdown(data: MarkdownExportData): string {
 }
 
 /**
- * Download content as a file
+ * Download content as a file (browser-specific)
  */
 export function downloadFile(content: string, filename: string): void {
   const blob = new Blob([content], { type: "text/markdown;charset=utf-8" });

@@ -3,9 +3,13 @@
   "version": "0.1.0",
   "description": "A simple app to selectively diff files between two Git commits.",
   "main": "dist/server.js",
+  "bin": {
+    "pickdiff": "dist/cli.js"
+  },
   "scripts": {
     "prestart": "npm run build",
     "start": "node dist/server.js",
+    "cli": "node dist/cli.js",
     "build": "npm run build:backend && npm run build:frontend",
     "build:backend": "tsc -p tsconfig.json",
     "build:frontend": "tsc -p tsconfig.frontend.json",
@@ -37,7 +41,8 @@
     "file-selector",
     "visual-git-diff",
     "simple-git",
-    "express"
+    "express",
+    "cli"
   ],
   "author": "Tyler Milner",
   "license": "MIT",
