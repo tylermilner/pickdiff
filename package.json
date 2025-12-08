@@ -47,14 +47,14 @@
   "author": "Tyler Milner",
   "license": "MIT",
   "dependencies": {
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "open": "^11.0.0",
     "simple-git": "^3.30.0"
   },
   "devDependencies": {
     "@biomejs/biome": "2.3.7",
     "@playwright/test": "^1.56.1",
-    "@types/express": "^5.0.5",
+    "@types/express": "^5.0.6",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.1",
     "@types/supertest": "^6.0.3",
